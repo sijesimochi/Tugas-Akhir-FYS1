@@ -71,12 +71,12 @@ compileGui = 0
 # Define column names
 columns = ['X-Pos', 'Y-Pos', 'Z-Pos', 'X-Vel', 'Y-Vel', 'Z-Vel', 'X-Acc', 'Y-Acc', 'Z-Acc']
 
-# Create an empty DataFrame
+""" # Create an empty DataFrame
 df = pd.DataFrame(columns=columns)
 
 # Save DataFrame to Excel initially
 df.to_csv('rawData.csv', index=False)
-
+"""
 # CachedData holds the data from the last configuration run for faster prototyping and testing
 cachedData = cachedDataType()
 # Only when compiling
@@ -2210,6 +2210,7 @@ class Window(QDialog):
                 ## Display fall detection results
 
                 # For each height heights for current tracks
+                sent = []
                 for height in heights:
                     # Find track with correct TID
                     for track in tracks:
@@ -2227,6 +2228,7 @@ class Window(QDialog):
                             # print(track[0:10])
                             rawData = track[1:10]
                             print(rawData)
+                            sent.append(rawData)
                             # print(tracks)
                             # print(trackIndexs)
                             # print(numPoints)
@@ -2235,12 +2237,11 @@ class Window(QDialog):
                             # If this track was computed to have fallen, display it on the screen
 
                             # Append the new data to the DataFrame
-                            df_new = pd.DataFrame([rawData], columns=columns)
-                            df = df.append(df_new, ignore_index=True)
+                            df_new = pd.DataFrame(sent, columns=columns, copy=False)
                             
-                            # Save the updated DataFrame to Excel
-                            with pd.ExcelWriter('data.csv', mode='w', engine='openpyxl') as writer:
-                                df.to_csv(writer, index=False, header=False)
+                            # Save the updated DataFrame to Excel\
+                            
+                            df_new.to_csv('rawData.csv', mode='a', index=False, header=False)
                             
 
                             if fallDetectionDisplayResults[tid] > 0:
