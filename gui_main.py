@@ -15,6 +15,7 @@ import warnings
 import random
 import copy
 import collections
+import pandas as pd
 
 # PyQt5 Imports
 from PyQt5.QtCore import QDateTime, Qt, QTimer, QThread, pyqtSignal, QSize
@@ -67,6 +68,14 @@ from fall_detection import FallDetection, fallDetectionSliderClass
 
 # ----- Defines -------------------------------------------------------
 compileGui = 0
+# Define column names
+columns = ['X-Pos', 'Y-Pos', 'Z-Pos', 'X-Vel', 'Y-Vel', 'Z-Vel', 'X-Acc', 'Y-Acc', 'Z-Acc']
+
+# Create an empty DataFrame
+df = pd.DataFrame(columns=columns)
+
+# Save DataFrame to Excel initially
+df.to_csv('rawData.csv', index=False)
 
 # CachedData holds the data from the last configuration run for faster prototyping and testing
 cachedData = cachedDataType()
@@ -347,7 +356,7 @@ class Window(QDialog):
         self.initConnectionPane()
         self.initStatsPane()
         self.initPlotControlPane()
-        self.initFallDetectPane()
+        # self.initFallDetectPane()
         self.initConfigPane()
         self.initSensorPositionPane()
         self.initBoundaryBoxPane()
@@ -365,9 +374,9 @@ class Window(QDialog):
         self.gridlay.addWidget(self.statBox, 1, 0, 1, 1)
         self.gridlay.addWidget(self.configBox, 2, 0, 1, 1)
         self.gridlay.addWidget(self.plotControlBox, 3, 0, 1, 1)
-        self.gridlay.addWidget(self.fallDetectionOptionsBox, 4, 0, 1, 1)
-        self.gridlay.addWidget(self.spBox, 5, 0, 1, 1)
-        self.gridlay.addWidget(self.boxTab, 6, 0, 1, 1)
+        # self.gridlay.addWidget(self.fallDetectionOptionsBox, 4, 0, 1, 1)
+        # self.gridlay.addWidget(self.spBox, 5, 0, 1, 1)
+        # self.gridlay.addWidget(self.boxTab, 6, 0, 1, 1)
         self.gridlay.setRowStretch(7, 1)  # Added to preserve spacing
         self.gridlay.addWidget(self.graphTabs, 0, 1, 8, 1)
         self.gridlay.addWidget(self.colorGradient, 0, 2, 8, 1)
@@ -526,26 +535,26 @@ class Window(QDialog):
             ((self.fallDetSlider.value() / self.fallDetSlider.maximum()) * 0.4) + 0.4
         )  # Range from 0.4 to 0.8
 
-    def initFallDetectPane(self):
-        self.fallDetectionOptionsBox = QGroupBox("Fall Detection Sensitivity")
-        self.fallDetLayout = QGridLayout()
-        self.fallDetSlider = fallDetectionSliderClass(Qt.Horizontal)
-        self.fallDetSlider.setTracking(True)
-        self.fallDetSlider.setTickPosition(QSlider.TicksBothSides)
-        self.fallDetSlider.setTickInterval(10)
-        self.fallDetSlider.setRange(0, 100)
-        self.fallDetSlider.setSliderPosition(50)
-        self.fallDetSlider.valueChanged.connect(self.updateFallDetectionSensitivity)
-        self.lessSensitiveLabel = QLabel("Less Sensitive")
-        self.fallDetLayout.addWidget(self.lessSensitiveLabel, 0, 0, 1, 1)
-        self.moreSensitiveLabel = QLabel("More Sensitive")
-        self.fallDetLayout.addWidget(self.moreSensitiveLabel, 0, 10, 1, 1)
-        self.fallDetLayout.addWidget(self.fallDetSlider, 1, 0, 1, 11)
-        self.fallDetectionOptionsBox.setLayout(self.fallDetLayout)
-        if self.displayFallDet.checkState() == 2:
-            self.fallDetectionOptionsBox.setVisible(True)
-        else:
-            self.fallDetectionOptionsBox.setVisible(False)
+    # def initFallDetectPane(self):
+    #     self.fallDetectionOptionsBox = QGroupBox("Fall Detection Sensitivity")
+    #     self.fallDetLayout = QGridLayout()
+    #     self.fallDetSlider = fallDetectionSliderClass(Qt.Horizontal)
+    #     self.fallDetSlider.setTracking(True)
+    #     self.fallDetSlider.setTickPosition(QSlider.TicksBothSides)
+    #     self.fallDetSlider.setTickInterval(10)
+    #     self.fallDetSlider.setRange(0, 100)
+    #     self.fallDetSlider.setSliderPosition(50)
+    #     self.fallDetSlider.valueChanged.connect(self.updateFallDetectionSensitivity)
+    #     self.lessSensitiveLabel = QLabel("Less Sensitive")
+    #     self.fallDetLayout.addWidget(self.lessSensitiveLabel, 0, 0, 1, 1)
+    #     self.moreSensitiveLabel = QLabel("More Sensitive")
+    #     self.fallDetLayout.addWidget(self.moreSensitiveLabel, 0, 10, 1, 1)
+    #     self.fallDetLayout.addWidget(self.fallDetSlider, 1, 0, 1, 11)
+    #     self.fallDetectionOptionsBox.setLayout(self.fallDetLayout)
+    #     if self.displayFallDet.checkState() == 2:
+    #         self.fallDetectionOptionsBox.setVisible(True)
+    #     else:
+    #         self.fallDetectionOptionsBox.setVisible(False)
 
     def initConfigPane(self):
         self.configBox = QGroupBox("Configuration")
@@ -2214,14 +2223,33 @@ class Window(QDialog):
                                 + str(round(height[1], 2))
                                 + " m"
                             )
+                            print("\n\ndata :")
+                            # print(track[0:10])
+                            rawData = track[1:10]
+                            print(rawData)
+                            # print(tracks)
+                            # print(trackIndexs)
+                            # print(numPoints)
+                            # for i in range(numPoints):
+                            #     print(pointCloud[i,0], pointCloud[i,1], pointCloud[i,2], pointCloud[i,3])
                             # If this track was computed to have fallen, display it on the screen
+
+                            # Append the new data to the DataFrame
+                            df_new = pd.DataFrame([rawData], columns=columns)
+                            df = df.append(df_new, ignore_index=True)
+                            
+                            # Save the updated DataFrame to Excel
+                            with pd.ExcelWriter('data.csv', mode='w', engine='openpyxl') as writer:
+                                df.to_csv(writer, index=False, header=False)
+                            
+
                             if fallDetectionDisplayResults[tid] > 0:
                                 height_str = height_str + " FALL DETECTED"
                                 fallStatVar = "Status: JATOHHHHHH!"
-                                print("jatuh")
+                                # print("jatuh")
                             else:
                                 fallStatVar = "Status: enjoy"
-                                print("tidak jatuh")
+                                # print("tidak jatuh")
                             self.fallDisplayStat.setText(fallStatVar)
                             self.coordStr[tid].setText(height_str)
                             self.coordStr[tid].setX(track[1])
