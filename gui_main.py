@@ -2227,6 +2227,7 @@ class Window(QDialog):
                             # print(track[0:10])
                             rawData = track[1:10]
                             print(rawData)
+                            print(heights)
                             # print(tracks)
                             # print(trackIndexs)
                             # print(numPoints)
