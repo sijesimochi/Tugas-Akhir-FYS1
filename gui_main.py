@@ -16,6 +16,20 @@ import random
 import copy
 import collections
 import pandas as pd
+import datetime
+import threading
+import asyncio
+
+# Supabase
+from dotenv import load_dotenv
+load_dotenv()
+
+from supabase import create_client
+
+url = os.environ.get("SUPABASE_URL")
+key= os.environ.get("SUPABASE_KEY")
+
+supabase = create_client(url, key)
 
 # PyQt5 Imports
 from PyQt5.QtCore import QDateTime, Qt, QTimer, QThread, pyqtSignal, QSize
@@ -69,13 +83,20 @@ from fall_detection import FallDetection, fallDetectionSliderClass
 # ----- Defines -------------------------------------------------------
 compileGui = 0
 # Define column names
-columns = ['X-Pos', 'Y-Pos', 'Z-Pos', 'X-Vel', 'Y-Vel', 'Z-Vel', 'X-Acc', 'Y-Acc', 'Z-Acc']
+columns = ['TS','X-Pos', 'Y-Pos', 'Z-Pos', 'X-Vel', 'Y-Vel', 'Z-Vel', 'X-Acc', 'Y-Acc', 'Z-Acc']
 
-# Create an empty DataFrame
+""" # Create an empty DataFrame
 df = pd.DataFrame(columns=columns)
 
 # Save DataFrame to Excel initially
 df.to_csv('rawData.csv', index=False)
+"""
+# global fallCon, xPos, yPos, zPos
+fallCon = False
+xPos = 0
+yPos = 0
+zPos = 0
+detectObject = False
 
 # CachedData holds the data from the last configuration run for faster prototyping and testing
 cachedData = cachedDataType()
@@ -146,6 +167,93 @@ def get_trackColors(n):
 def next_power_of_2(x):
     return 1 if x == 0 else 2 ** (x - 1).bit_length()
 
+def visualizePointCloud(heights, tracks, self):
+    global fallCon, xPos, yPos, zPos, detectObject
+    if heights is not None:
+        detectObject = True
+        # print(heights)
+        if len(heights) != len(tracks):
+            print("WARNING: number of heights does not match number of tracks")
+        # Compute the fall detection results for each object
+        fallDetectionDisplayResults = self.fallDetection.step(heights, tracks)
+        ## Display fall detection results
+
+        # For each height heights for current tracks
+        sent = []
+        for height in heights:
+            # Find track with correct TID
+            for track in tracks:
+                # Found correct track
+                if int(track[0]) == int(height[0]):
+                    tid = int(height[0])
+                    height_str = (
+                        "tid : "
+                        + str(height[0])
+                        + ", height : "
+                        + str(round(height[1], 2))
+                        + " m"
+                    )
+                    # ts store timestamp of current time
+                    ct = datetime.datetime.now()
+                    ts = ct.timestamp()
+                    print("\n\ndata :")
+                    # print(track[0:10])
+                    
+                    rawData = track[1:10]
+                    rawData = np.insert(rawData, 0, ts)
+                    xPos = track[1]
+                    yPos = track[2]
+                    zPos = track[3]
+                    # print(rawData)
+                    # sent.append(ts)
+                    sent.append(rawData)
+                    print(sent)
+                    # print(tracks)
+                    # print(trackIndexs)
+                    # print(numPoints)
+                    # for i in range(numPoints):
+                    #     print(pointCloud[i,0], pointCloud[i,1], pointCloud[i,2], pointCloud[i,3])
+                    # If this track was computed to have fallen, display it on the screen
+
+                    # Append the new data to the DataFrame
+                    df_new = pd.DataFrame(sent, columns=columns, copy=False)
+                    
+                    # Save the updated DataFrame to Excel\
+                    df_new.to_csv('rawData20.csv', mode='a', index=False, header=False)
+
+                    if fallDetectionDisplayResults[tid] > 0:
+                        height_str = height_str + " FALL DETECTED"
+                        fallStatVar = "Status: JATOHHHHHH!"
+                        fallCon = True
+                        # print("jatuh")
+                    else:
+                        fallStatVar = "Status: enjoy"
+                        # print("tidak jatuh")
+                        fallCon = False
+
+                    self.fallDisplayStat.setText(fallStatVar)
+                    self.coordStr[tid].setText(height_str)
+                    self.coordStr[tid].setX(track[1])
+                    self.coordStr[tid].setY(track[2])
+                    self.coordStr[tid].setZ(track[3])
+                    self.coordStr[tid].setVisible(True)
+                    break
+    else:
+        detectObject = False
+
+def sentToSupabase():
+    global fallCon, xPos, yPos, detectObject
+
+    if detectObject == False:
+        # fallCon = False
+        # xPos = 0
+        # yPos = 0
+        # zPos = 0
+        supaData = supabase.table("data").update({"falCon":False, "xPos":0, "yPos":0, "zPos":0}).eq("id",0).execute()
+    else:
+        supaData = supabase.table("data").update({"falCon":fallCon, "xPos":xPos, "yPos":yPos, "zPos":zPos}).eq("id",0).execute()
+
+    print(supaData)
 
 class Window(QDialog):
     def __init__(self, parent=None, size=[]):
@@ -339,7 +447,7 @@ class Window(QDialog):
             left = 50
             top = 50
             width = math.ceil(size.width() * 0.9)
-            height = math.ceil(size.height() * 0.9)
+            height = math.ceil(size.height() * 0.7)
             self.setGeometry(left, top, width, height)
         # Persistent point cloud
         self.previousClouds = []
@@ -2202,63 +2310,80 @@ class Window(QDialog):
         # If fall detection is enabled
         if self.displayFallDet.checkState() == 2:
             # If there are heights to display
-            if heights is not None:
-                if len(heights) != len(tracks):
-                    print("WARNING: number of heights does not match number of tracks")
-                # Compute the fall detection results for each object
-                fallDetectionDisplayResults = self.fallDetection.step(heights, tracks)
-                ## Display fall detection results
+            t1 = threading.Thread(target=visualizePointCloud, args=(heights, tracks, self))
+            t2 = threading.Thread(target=sentToSupabase, args=())
+        
+            t1.start()
+            t2.start()
 
-                # For each height heights for current tracks
-                for height in heights:
-                    # Find track with correct TID
-                    for track in tracks:
-                        # Found correct track
-                        if int(track[0]) == int(height[0]):
-                            tid = int(height[0])
-                            height_str = (
-                                "tid : "
-                                + str(height[0])
-                                + ", height : "
-                                + str(round(height[1], 2))
-                                + " m"
-                            )
-                            print("\n\ndata :")
-                            # print(track[0:10])
-                            rawData = track[1:10]
-                            print(rawData)
-                            print(heights)
-                            # print(tracks)
-                            # print(trackIndexs)
-                            # print(numPoints)
-                            # for i in range(numPoints):
-                            #     print(pointCloud[i,0], pointCloud[i,1], pointCloud[i,2], pointCloud[i,3])
-                            # If this track was computed to have fallen, display it on the screen
+            # if heights is not None:
+            #     if len(heights) != len(tracks):
+            #         print("WARNING: number of heights does not match number of tracks")
+            #     # Compute the fall detection results for each object
+            #     fallDetectionDisplayResults = self.fallDetection.step(heights, tracks)
+            #     ## Display fall detection results
 
-                            # Append the new data to the DataFrame
-                            df_new = pd.DataFrame([rawData], columns=columns)
-                            df = df.append(df_new, ignore_index=True)
+            #     # For each height heights for current tracks
+            #     sent = []
+            #     for height in heights:
+            #         # Find track with correct TID
+            #         for track in tracks:
+            #             # Found correct track
+            #             if int(track[0]) == int(height[0]):
+            #                 tid = int(height[0])
+            #                 height_str = (
+            #                     "tid : "
+            #                     + str(height[0])
+            #                     + ", height : "
+            #                     + str(round(height[1], 2))
+            #                     + " m"
+            #                 )
+            #                 # ts store timestamp of current time
+            #                 ct = datetime.datetime.now()
+            #                 ts = ct.timestamp()
+            #                 print("\n\ndata :")
+            #                 # print(track[0:10])
                             
-                            # Save the updated DataFrame to Excel
-                            with pd.ExcelWriter('data.csv', mode='w', engine='openpyxl') as writer:
-                                df.to_csv(writer, index=False, header=False)
+            #                 rawData = track[1:10]
+            #                 xPos = track[1]
+            #                 yPos = track[2]
+            #                 zPos = track[3]
+            #                 rawData = np.insert(rawData, 0, ts)
+            #                 # print(rawData)
+            #                 # sent.append(ts)
+            #                 sent.append(rawData)
+            #                 print(sent)
+            #                 # print(tracks)
+            #                 # print(trackIndexs)
+            #                 # print(numPoints)
+            #                 # for i in range(numPoints):
+            #                 #     print(pointCloud[i,0], pointCloud[i,1], pointCloud[i,2], pointCloud[i,3])
+            #                 # If this track was computed to have fallen, display it on the screen
+
+            #                 # # Append the new data to the DataFrame
+            #                 # df_new = pd.DataFrame(sent, columns=columns, copy=False)
                             
+            #                 # # Save the updated DataFrame to Excel\
+            #                 # df_new.to_csv('rawData20.csv', mode='a', index=False, header=False)
 
-                            if fallDetectionDisplayResults[tid] > 0:
-                                height_str = height_str + " FALL DETECTED"
-                                fallStatVar = "Status: JATOHHHHHH!"
-                                # print("jatuh")
-                            else:
-                                fallStatVar = "Status: enjoy"
-                                # print("tidak jatuh")
-                            self.fallDisplayStat.setText(fallStatVar)
-                            self.coordStr[tid].setText(height_str)
-                            self.coordStr[tid].setX(track[1])
-                            self.coordStr[tid].setY(track[2])
-                            self.coordStr[tid].setZ(track[3])
-                            self.coordStr[tid].setVisible(True)
-                            break
+            #                 if fallDetectionDisplayResults[tid] > 0:
+            #                     height_str = height_str + " FALL DETECTED"
+            #                     fallStatVar = "Status: JATOHHHHHH!"
+            #                     fallCon = True
+            #                     # print("jatuh")
+            #                 else:
+            #                     fallStatVar = "Status: enjoy"
+            #                     fallCon = False
+            #                     # print("tidak jatuh")
 
+            #                 self.fallDisplayStat.setText(fallStatVar)
+            #                 self.coordStr[tid].setText(height_str)
+            #                 self.coordStr[tid].setX(track[1])
+            #                 self.coordStr[tid].setY(track[2])
+            #                 self.coordStr[tid].setZ(track[3])
+            #                 self.coordStr[tid].setVisible(True)
+            #                 break
+            
         # Point cloud Persistence
         numPersistentFrames = int(self.persistentFramesInput.currentText())
         if (
