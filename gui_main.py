@@ -23,13 +23,21 @@ import asyncio
 # Supabase
 from dotenv import load_dotenv
 load_dotenv()
-
 from supabase import create_client
 
 url = os.environ.get("SUPABASE_URL")
 key= os.environ.get("SUPABASE_KEY")
-
 supabase = create_client(url, key)
+
+# import firebase modules
+import firebase_admin
+from firebase_admin import db, credentials
+
+cred = credentials.Certificate("credentials.json")
+firebase_admin.initialize_app(
+    cred, {"databaseURL": "https://bath-mate-default-rtdb.firebaseio.com/"}
+)
+ref = db.reference("/")
 
 # PyQt5 Imports
 from PyQt5.QtCore import QDateTime, Qt, QTimer, QThread, pyqtSignal, QSize
@@ -79,24 +87,32 @@ from graphUtilities import *
 from gui_common import *
 from cachedData import *
 from fall_detection import FallDetection, fallDetectionSliderClass
+from buzzer import *
+
 
 # ----- Defines -------------------------------------------------------
 compileGui = 0
 # Define column names
+firstColumns = [(['TS','X-Pos', 'Y-Pos', 'Z-Pos', 'X-Vel', 'Y-Vel', 'Z-Vel', 'X-Acc', 'Y-Acc', 'Z-Acc'])]
 columns = ['TS','X-Pos', 'Y-Pos', 'Z-Pos', 'X-Vel', 'Y-Vel', 'Z-Vel', 'X-Acc', 'Y-Acc', 'Z-Acc']
+fileName = "rawData10.csv"
 
-""" # Create an empty DataFrame
-df = pd.DataFrame(columns=columns)
+df_new = pd.DataFrame(firstColumns, columns=columns, copy=False)
+df_new.to_csv(fileName, mode='a', index=False, header=False)
+
+# Create an empty DataFrame
+# df_new = pd.DataFrame(columns=columns)
 
 # Save DataFrame to Excel initially
-df.to_csv('rawData.csv', index=False)
-"""
+# df.to_csv('rawData.csv', index=False)
+
 # global fallCon, xPos, yPos, zPos
 fallCon = False
 xPos = 0
 yPos = 0
 zPos = 0
 detectObject = False
+fallConDisplay = 0
 
 # CachedData holds the data from the last configuration run for faster prototyping and testing
 cachedData = cachedDataType()
@@ -218,18 +234,25 @@ def visualizePointCloud(heights, tracks, self):
                     # Append the new data to the DataFrame
                     df_new = pd.DataFrame(sent, columns=columns, copy=False)
                     
-                    # Save the updated DataFrame to Excel\
-                    df_new.to_csv('rawData20.csv', mode='a', index=False, header=False)
+                    # Save the updated DataFrame to Excel
+                    df_new.to_csv(fileName, mode='a', index=False, header=False)
 
                     if fallDetectionDisplayResults[tid] > 0:
                         height_str = height_str + " FALL DETECTED"
                         fallStatVar = "Status: JATOHHHHHH!"
                         fallCon = True
+                        # on_all()
+                        self.subjectSetupImg = QPixmap("image/fallSmall.jpg")
+                        self.subjectImgLabel.setPixmap(self.subjectSetupImg)
+
                         # print("jatuh")
                     else:
                         fallStatVar = "Status: enjoy"
                         # print("tidak jatuh")
                         fallCon = False
+                        # off_all()
+                        self.subjectSetupImg = QPixmap("image/standbySmall.jpg")
+                        self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
                     self.fallDisplayStat.setText(fallStatVar)
                     self.coordStr[tid].setText(height_str)
@@ -240,19 +263,29 @@ def visualizePointCloud(heights, tracks, self):
                     break
     else:
         detectObject = False
+        self.subjectSetupImg = QPixmap("image/emptySmall.jpg")
+        self.subjectImgLabel.setPixmap(self.subjectSetupImg)
+        # off_all()
 
 def sentToSupabase():
-    global fallCon, xPos, yPos, detectObject
+    global fallCon, xPos, yPos, zPos, detectObject
 
     if detectObject == False:
-        # fallCon = False
-        # xPos = 0
-        # yPos = 0
-        # zPos = 0
-        supaData = supabase.table("data").update({"falCon":False, "xPos":0, "yPos":0, "zPos":0}).eq("id",0).execute()
+        supaData = supabase.table("data").update({"xPos":0, "yPos":0, "zPos":0, "detectObject":False, "fallCon":False}).eq("id",0).execute()
+        db.reference("/objectDetect").set(False)
+        db.reference("/fallCon").set(False)
+        db.reference("/xPos").set("0")
+        db.reference("/yPos").set("0")
+        db.reference("/zPos").set("0")
     else:
-        supaData = supabase.table("data").update({"falCon":fallCon, "xPos":xPos, "yPos":yPos, "zPos":zPos}).eq("id",0).execute()
+        supaData = supabase.table("data").update({"xPos":xPos, "yPos":yPos, "zPos":zPos, "detectObject":True ,"fallCon":fallCon}).eq("id",0).execute()
+        db.reference("/objectDetect").set(True)
+        db.reference("/fallCon").set(fallCon)
+        db.reference("/xPos").set(xPos)
+        db.reference("/yPos").set(yPos)
+        db.reference("/zPos").set(zPos)
 
+    print("\n")
     print(supaData)
 
 class Window(QDialog):
@@ -267,7 +300,7 @@ class Window(QDialog):
             | Qt.WindowMaximizeButtonHint
             | Qt.WindowCloseButtonHint
         )
-        self.setWindowTitle("Yok bisa yok FYS-1")
+        self.setWindowTitle("bathMate")
 
         if (
             0
@@ -446,7 +479,7 @@ class Window(QDialog):
         if size:
             left = 50
             top = 50
-            width = math.ceil(size.width() * 0.9)
+            width = math.ceil(size.width() * 0.8)
             height = math.ceil(size.height() * 0.7)
             self.setGeometry(left, top, width, height)
         # Persistent point cloud
@@ -464,6 +497,7 @@ class Window(QDialog):
         self.initConnectionPane()
         self.initStatsPane()
         self.initPlotControlPane()
+        self.fallCondition()
         # self.initFallDetectPane()
         self.initConfigPane()
         self.initSensorPositionPane()
@@ -481,7 +515,8 @@ class Window(QDialog):
         self.gridlay.addWidget(self.comBox, 0, 0, 1, 1)
         self.gridlay.addWidget(self.statBox, 1, 0, 1, 1)
         self.gridlay.addWidget(self.configBox, 2, 0, 1, 1)
-        self.gridlay.addWidget(self.plotControlBox, 3, 0, 1, 1)
+        self.gridlay.addWidget(self.subjectStatusBox, 3, 0, 1, 1)
+        # self.gridlay.addWidget(self.plotControlBox, 3, 0, 1, 1)
         # self.gridlay.addWidget(self.fallDetectionOptionsBox, 4, 0, 1, 1)
         # self.gridlay.addWidget(self.spBox, 5, 0, 1, 1)
         # self.gridlay.addWidget(self.boxTab, 6, 0, 1, 1)
@@ -614,6 +649,15 @@ class Window(QDialog):
         else:
             self.parser.setSaveBinary(False)
 
+    def fallCondition(self):
+        self.subjectStatusBox = QGroupBox("Subject Status")
+        self.subjectSetupGrid = QGridLayout()
+        self.subjectImgLabel = QLabel()
+        self.subjectSetupImg = QPixmap("image/emptySmall.jpg")
+        self.subjectSetupGrid.addWidget(self.subjectImgLabel, 1, 1)
+        self.subjectImgLabel.setPixmap(self.subjectSetupImg)
+        self.subjectStatusBox.setLayout(self.subjectSetupGrid)
+
     def initPlotControlPane(self):
         self.plotControlBox = QGroupBox("Plot Controls")
         self.pointColorMode = QComboBox()
@@ -622,7 +666,7 @@ class Window(QDialog):
         )
         self.plotTracks = QCheckBox("Plot Tracks")
         self.displayFallDet = QCheckBox("Detect Falls")
-        self.displayFallDet.stateChanged.connect(self.fallDetDisplayChanged)
+        # self.displayFallDet.stateChanged.connect(self.fallDetDisplayChanged)
         self.persistentFramesInput = QComboBox()
         self.persistentFramesInput.addItems(
             [str(i) for i in range(1, MAX_PERSISTENT_FRAMES + 1)]
@@ -1147,9 +1191,10 @@ class Window(QDialog):
                 zr = float(box["boundList"][5].text())
 
                 boxLines = getBoxLines(xl, yl, zl, xr, yr, zr)
-                boxColor = pg.glColor(
-                    box["color"].itemData(box["color"].currentIndex())
-                )
+                # boxColor = pg.glColor(
+                #     box["color"].itemData(box["color"].currentIndex())
+                # )
+                boxColor = pg.glColor("c") 
                 self.boundaryBoxViz[index].setData(
                     pos=boxLines, color=boxColor, width=2, antialias=True, mode="lines"
                 )
@@ -1280,6 +1325,8 @@ class Window(QDialog):
         # Create the background grid
         self.gz = gl.GLGridItem()
         self.pcplot.addItem(self.gz)
+        self.pcplot.pan(dx=0,dy=1.5,dz=1.2)
+        self.pcplot.setCameraPosition(distance=6.8)
 
         # Create scatter plot for point cloud
         self.scatter = gl.GLScatterPlotItem(size=5)
