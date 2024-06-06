@@ -15,6 +15,21 @@ import warnings
 import random
 import copy
 import collections
+import pandas as pd
+import datetime
+import threading
+import asyncio
+
+# Supabase
+from dotenv import load_dotenv
+load_dotenv()
+
+from supabase import create_client
+
+url = os.environ.get("SUPABASE_URL")
+key= os.environ.get("SUPABASE_KEY")
+
+supabase = create_client(url, key)
 
 # PyQt5 Imports
 from PyQt5.QtCore import QDateTime, Qt, QTimer, QThread, pyqtSignal, QSize
@@ -67,6 +82,21 @@ from fall_detection import FallDetection, fallDetectionSliderClass
 
 # ----- Defines -------------------------------------------------------
 compileGui = 0
+# Define column names
+columns = ['TS','X-Pos', 'Y-Pos', 'Z-Pos', 'X-Vel', 'Y-Vel', 'Z-Vel', 'X-Acc', 'Y-Acc', 'Z-Acc']
+
+""" # Create an empty DataFrame
+df = pd.DataFrame(columns=columns)
+
+# Save DataFrame to Excel initially
+df.to_csv('rawData.csv', index=False)
+"""
+# global fallCon, xPos, yPos, zPos
+fallCon = False
+xPos = 0
+yPos = 0
+zPos = 0
+detectObject = False
 
 # CachedData holds the data from the last configuration run for faster prototyping and testing
 cachedData = cachedDataType()
@@ -137,6 +167,93 @@ def get_trackColors(n):
 def next_power_of_2(x):
     return 1 if x == 0 else 2 ** (x - 1).bit_length()
 
+def visualizePointCloud(heights, tracks, self):
+    global fallCon, xPos, yPos, zPos, detectObject
+    if heights is not None:
+        detectObject = True
+        # print(heights)
+        if len(heights) != len(tracks):
+            print("WARNING: number of heights does not match number of tracks")
+        # Compute the fall detection results for each object
+        fallDetectionDisplayResults = self.fallDetection.step(heights, tracks)
+        ## Display fall detection results
+
+        # For each height heights for current tracks
+        sent = []
+        for height in heights:
+            # Find track with correct TID
+            for track in tracks:
+                # Found correct track
+                if int(track[0]) == int(height[0]):
+                    tid = int(height[0])
+                    height_str = (
+                        "tid : "
+                        + str(height[0])
+                        + ", height : "
+                        + str(round(height[1], 2))
+                        + " m"
+                    )
+                    # ts store timestamp of current time
+                    ct = datetime.datetime.now()
+                    ts = ct.timestamp()
+                    print("\n\ndata :")
+                    # print(track[0:10])
+                    
+                    rawData = track[1:10]
+                    rawData = np.insert(rawData, 0, ts)
+                    xPos = track[1]
+                    yPos = track[2]
+                    zPos = track[3]
+                    # print(rawData)
+                    # sent.append(ts)
+                    sent.append(rawData)
+                    print(sent)
+                    # print(tracks)
+                    # print(trackIndexs)
+                    # print(numPoints)
+                    # for i in range(numPoints):
+                    #     print(pointCloud[i,0], pointCloud[i,1], pointCloud[i,2], pointCloud[i,3])
+                    # If this track was computed to have fallen, display it on the screen
+
+                    # Append the new data to the DataFrame
+                    df_new = pd.DataFrame(sent, columns=columns, copy=False)
+                    
+                    # Save the updated DataFrame to Excel\
+                    df_new.to_csv('rawData20.csv', mode='a', index=False, header=False)
+
+                    if fallDetectionDisplayResults[tid] > 0:
+                        height_str = height_str + " FALL DETECTED"
+                        fallStatVar = "Status: JATOHHHHHH!"
+                        fallCon = True
+                        # print("jatuh")
+                    else:
+                        fallStatVar = "Status: enjoy"
+                        # print("tidak jatuh")
+                        fallCon = False
+
+                    self.fallDisplayStat.setText(fallStatVar)
+                    self.coordStr[tid].setText(height_str)
+                    self.coordStr[tid].setX(track[1])
+                    self.coordStr[tid].setY(track[2])
+                    self.coordStr[tid].setZ(track[3])
+                    self.coordStr[tid].setVisible(True)
+                    break
+    else:
+        detectObject = False
+
+def sentToSupabase():
+    global fallCon, xPos, yPos, detectObject
+
+    if detectObject == False:
+        # fallCon = False
+        # xPos = 0
+        # yPos = 0
+        # zPos = 0
+        supaData = supabase.table("data").update({"falCon":False, "xPos":0, "yPos":0, "zPos":0}).eq("id",0).execute()
+    else:
+        supaData = supabase.table("data").update({"falCon":fallCon, "xPos":xPos, "yPos":yPos, "zPos":zPos}).eq("id",0).execute()
+
+    print(supaData)
 
 class Window(QDialog):
     def __init__(self, parent=None, size=[]):
@@ -330,7 +447,7 @@ class Window(QDialog):
             left = 50
             top = 50
             width = math.ceil(size.width() * 0.9)
-            height = math.ceil(size.height() * 0.9)
+            height = math.ceil(size.height() * 0.7)
             self.setGeometry(left, top, width, height)
         # Persistent point cloud
         self.previousClouds = []
@@ -347,7 +464,7 @@ class Window(QDialog):
         self.initConnectionPane()
         self.initStatsPane()
         self.initPlotControlPane()
-        self.initFallDetectPane()
+        # self.initFallDetectPane()
         self.initConfigPane()
         self.initSensorPositionPane()
         self.initBoundaryBoxPane()
@@ -365,9 +482,9 @@ class Window(QDialog):
         self.gridlay.addWidget(self.statBox, 1, 0, 1, 1)
         self.gridlay.addWidget(self.configBox, 2, 0, 1, 1)
         self.gridlay.addWidget(self.plotControlBox, 3, 0, 1, 1)
-        self.gridlay.addWidget(self.fallDetectionOptionsBox, 4, 0, 1, 1)
-        self.gridlay.addWidget(self.spBox, 5, 0, 1, 1)
-        self.gridlay.addWidget(self.boxTab, 6, 0, 1, 1)
+        # self.gridlay.addWidget(self.fallDetectionOptionsBox, 4, 0, 1, 1)
+        # self.gridlay.addWidget(self.spBox, 5, 0, 1, 1)
+        # self.gridlay.addWidget(self.boxTab, 6, 0, 1, 1)
         self.gridlay.setRowStretch(7, 1)  # Added to preserve spacing
         self.gridlay.addWidget(self.graphTabs, 0, 1, 8, 1)
         self.gridlay.addWidget(self.colorGradient, 0, 2, 8, 1)
@@ -526,26 +643,26 @@ class Window(QDialog):
             ((self.fallDetSlider.value() / self.fallDetSlider.maximum()) * 0.4) + 0.4
         )  # Range from 0.4 to 0.8
 
-    def initFallDetectPane(self):
-        self.fallDetectionOptionsBox = QGroupBox("Fall Detection Sensitivity")
-        self.fallDetLayout = QGridLayout()
-        self.fallDetSlider = fallDetectionSliderClass(Qt.Horizontal)
-        self.fallDetSlider.setTracking(True)
-        self.fallDetSlider.setTickPosition(QSlider.TicksBothSides)
-        self.fallDetSlider.setTickInterval(10)
-        self.fallDetSlider.setRange(0, 100)
-        self.fallDetSlider.setSliderPosition(50)
-        self.fallDetSlider.valueChanged.connect(self.updateFallDetectionSensitivity)
-        self.lessSensitiveLabel = QLabel("Less Sensitive")
-        self.fallDetLayout.addWidget(self.lessSensitiveLabel, 0, 0, 1, 1)
-        self.moreSensitiveLabel = QLabel("More Sensitive")
-        self.fallDetLayout.addWidget(self.moreSensitiveLabel, 0, 10, 1, 1)
-        self.fallDetLayout.addWidget(self.fallDetSlider, 1, 0, 1, 11)
-        self.fallDetectionOptionsBox.setLayout(self.fallDetLayout)
-        if self.displayFallDet.checkState() == 2:
-            self.fallDetectionOptionsBox.setVisible(True)
-        else:
-            self.fallDetectionOptionsBox.setVisible(False)
+    # def initFallDetectPane(self):
+    #     self.fallDetectionOptionsBox = QGroupBox("Fall Detection Sensitivity")
+    #     self.fallDetLayout = QGridLayout()
+    #     self.fallDetSlider = fallDetectionSliderClass(Qt.Horizontal)
+    #     self.fallDetSlider.setTracking(True)
+    #     self.fallDetSlider.setTickPosition(QSlider.TicksBothSides)
+    #     self.fallDetSlider.setTickInterval(10)
+    #     self.fallDetSlider.setRange(0, 100)
+    #     self.fallDetSlider.setSliderPosition(50)
+    #     self.fallDetSlider.valueChanged.connect(self.updateFallDetectionSensitivity)
+    #     self.lessSensitiveLabel = QLabel("Less Sensitive")
+    #     self.fallDetLayout.addWidget(self.lessSensitiveLabel, 0, 0, 1, 1)
+    #     self.moreSensitiveLabel = QLabel("More Sensitive")
+    #     self.fallDetLayout.addWidget(self.moreSensitiveLabel, 0, 10, 1, 1)
+    #     self.fallDetLayout.addWidget(self.fallDetSlider, 1, 0, 1, 11)
+    #     self.fallDetectionOptionsBox.setLayout(self.fallDetLayout)
+    #     if self.displayFallDet.checkState() == 2:
+    #         self.fallDetectionOptionsBox.setVisible(True)
+    #     else:
+    #         self.fallDetectionOptionsBox.setVisible(False)
 
     def initConfigPane(self):
         self.configBox = QGroupBox("Configuration")
@@ -2193,43 +2310,80 @@ class Window(QDialog):
         # If fall detection is enabled
         if self.displayFallDet.checkState() == 2:
             # If there are heights to display
-            if heights is not None:
-                if len(heights) != len(tracks):
-                    print("WARNING: number of heights does not match number of tracks")
-                # Compute the fall detection results for each object
-                fallDetectionDisplayResults = self.fallDetection.step(heights, tracks)
-                ## Display fall detection results
+            t1 = threading.Thread(target=visualizePointCloud, args=(heights, tracks, self))
+            t2 = threading.Thread(target=sentToSupabase, args=())
+        
+            t1.start()
+            t2.start()
 
-                # For each height heights for current tracks
-                for height in heights:
-                    # Find track with correct TID
-                    for track in tracks:
-                        # Found correct track
-                        if int(track[0]) == int(height[0]):
-                            tid = int(height[0])
-                            height_str = (
-                                "tid : "
-                                + str(height[0])
-                                + ", height : "
-                                + str(round(height[1], 2))
-                                + " m"
-                            )
-                            # If this track was computed to have fallen, display it on the screen
-                            if fallDetectionDisplayResults[tid] > 0:
-                                height_str = height_str + " FALL DETECTED"
-                                fallStatVar = "Status: JATOHHHHHH!"
-                                print("jatuh")
-                            else:
-                                fallStatVar = "Status: enjoy"
-                                print("tidak jatuh")
-                            self.fallDisplayStat.setText(fallStatVar)
-                            self.coordStr[tid].setText(height_str)
-                            self.coordStr[tid].setX(track[1])
-                            self.coordStr[tid].setY(track[2])
-                            self.coordStr[tid].setZ(track[3])
-                            self.coordStr[tid].setVisible(True)
-                            break
+            # if heights is not None:
+            #     if len(heights) != len(tracks):
+            #         print("WARNING: number of heights does not match number of tracks")
+            #     # Compute the fall detection results for each object
+            #     fallDetectionDisplayResults = self.fallDetection.step(heights, tracks)
+            #     ## Display fall detection results
 
+            #     # For each height heights for current tracks
+            #     sent = []
+            #     for height in heights:
+            #         # Find track with correct TID
+            #         for track in tracks:
+            #             # Found correct track
+            #             if int(track[0]) == int(height[0]):
+            #                 tid = int(height[0])
+            #                 height_str = (
+            #                     "tid : "
+            #                     + str(height[0])
+            #                     + ", height : "
+            #                     + str(round(height[1], 2))
+            #                     + " m"
+            #                 )
+            #                 # ts store timestamp of current time
+            #                 ct = datetime.datetime.now()
+            #                 ts = ct.timestamp()
+            #                 print("\n\ndata :")
+            #                 # print(track[0:10])
+                            
+            #                 rawData = track[1:10]
+            #                 xPos = track[1]
+            #                 yPos = track[2]
+            #                 zPos = track[3]
+            #                 rawData = np.insert(rawData, 0, ts)
+            #                 # print(rawData)
+            #                 # sent.append(ts)
+            #                 sent.append(rawData)
+            #                 print(sent)
+            #                 # print(tracks)
+            #                 # print(trackIndexs)
+            #                 # print(numPoints)
+            #                 # for i in range(numPoints):
+            #                 #     print(pointCloud[i,0], pointCloud[i,1], pointCloud[i,2], pointCloud[i,3])
+            #                 # If this track was computed to have fallen, display it on the screen
+
+            #                 # # Append the new data to the DataFrame
+            #                 # df_new = pd.DataFrame(sent, columns=columns, copy=False)
+                            
+            #                 # # Save the updated DataFrame to Excel\
+            #                 # df_new.to_csv('rawData20.csv', mode='a', index=False, header=False)
+
+            #                 if fallDetectionDisplayResults[tid] > 0:
+            #                     height_str = height_str + " FALL DETECTED"
+            #                     fallStatVar = "Status: JATOHHHHHH!"
+            #                     fallCon = True
+            #                     # print("jatuh")
+            #                 else:
+            #                     fallStatVar = "Status: enjoy"
+            #                     fallCon = False
+            #                     # print("tidak jatuh")
+
+            #                 self.fallDisplayStat.setText(fallStatVar)
+            #                 self.coordStr[tid].setText(height_str)
+            #                 self.coordStr[tid].setX(track[1])
+            #                 self.coordStr[tid].setY(track[2])
+            #                 self.coordStr[tid].setZ(track[3])
+            #                 self.coordStr[tid].setVisible(True)
+            #                 break
+            
         # Point cloud Persistence
         numPersistentFrames = int(self.persistentFramesInput.currentText())
         if (
