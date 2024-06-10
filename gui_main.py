@@ -23,11 +23,11 @@ import asyncio
 # Supabase
 from dotenv import load_dotenv
 load_dotenv()
-from supabase import create_client
+# from supabase import create_client
 
-url = os.environ.get("SUPABASE_URL")
-key= os.environ.get("SUPABASE_KEY")
-supabase = create_client(url, key)
+# url = os.environ.get("SUPABASE_URL")
+# key= os.environ.get("SUPABASE_KEY")
+# supabase = create_client(url, key)
 
 # import firebase modules
 import firebase_admin
@@ -98,7 +98,7 @@ columns = ['TS','X-Pos', 'Y-Pos', 'Z-Pos', 'X-Vel', 'Y-Vel', 'Z-Vel', 'X-Acc', '
 fileName = "rawData10.csv"
 
 df_new = pd.DataFrame(firstColumns, columns=columns, copy=False)
-df_new.to_csv(fileName, mode='a', index=False, header=False)
+# df_new.to_csv(fileName, mode='a', index=False, header=False)
 
 # Create an empty DataFrame
 # df_new = pd.DataFrame(columns=columns)
@@ -113,6 +113,7 @@ yPos = 0
 zPos = 0
 detectObject = False
 fallConDisplay = 0
+subjectStatus = "0"
 
 # CachedData holds the data from the last configuration run for faster prototyping and testing
 cachedData = cachedDataType()
@@ -184,9 +185,10 @@ def next_power_of_2(x):
     return 1 if x == 0 else 2 ** (x - 1).bit_length()
 
 def visualizePointCloud(heights, tracks, self):
-    global fallCon, xPos, yPos, zPos, detectObject
+    global fallCon, xPos, yPos, zPos, detectObject, subjectStatus
     if heights is not None:
         detectObject = True
+        # subjectStatus = "1"
         # print(heights)
         if len(heights) != len(tracks):
             print("WARNING: number of heights does not match number of tracks")
@@ -235,14 +237,15 @@ def visualizePointCloud(heights, tracks, self):
                     df_new = pd.DataFrame(sent, columns=columns, copy=False)
                     
                     # Save the updated DataFrame to Excel
-                    df_new.to_csv(fileName, mode='a', index=False, header=False)
+                    # df_new.to_csv(fileName, mode='a', index=False, header=False)
 
                     if fallDetectionDisplayResults[tid] > 0:
                         height_str = height_str + " FALL DETECTED"
                         fallStatVar = "Status: JATOHHHHHH!"
                         fallCon = True
+                        subjectStatus = "2"
                         # on_all()
-                        self.subjectSetupImg = QPixmap("image/fallSmall.jpg")
+                        self.subjectSetupImg = QPixmap("images/3Small.png")
                         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
                         # print("jatuh")
@@ -250,8 +253,9 @@ def visualizePointCloud(heights, tracks, self):
                         fallStatVar = "Status: enjoy"
                         # print("tidak jatuh")
                         fallCon = False
+                        subjectStatus = "1"
                         # off_all()
-                        self.subjectSetupImg = QPixmap("image/standbySmall.jpg")
+                        self.subjectSetupImg = QPixmap("images/2Small.png")
                         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
                     self.fallDisplayStat.setText(fallStatVar)
@@ -263,30 +267,43 @@ def visualizePointCloud(heights, tracks, self):
                     break
     else:
         detectObject = False
-        self.subjectSetupImg = QPixmap("image/emptySmall.jpg")
+        if (fallCon == True):
+            subjectStatus = "2"
+            self.subjectSetupImg = QPixmap("images/3Small.png")
+        else:
+            subjectStatus = "0"
+            self.subjectSetupImg = QPixmap("images/1Small.png")
+
+        # subjectStatus = "0"
+        # self.subjectSetupImg = QPixmap("images/1Small.png")
+
         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
         # off_all()
 
 def sentToSupabase():
-    global fallCon, xPos, yPos, zPos, detectObject
+    global fallCon, xPos, yPos, zPos, detectObject, subjectStatus
 
     if detectObject == False:
-        supaData = supabase.table("data").update({"xPos":0, "yPos":0, "zPos":0, "detectObject":False, "fallCon":False}).eq("id",0).execute()
-        db.reference("/objectDetect").set(False)
-        db.reference("/fallCon").set(False)
+        # supaData = supabase.table("data").update({"xPos":0, "yPos":0, "zPos":0, "detectObject":False, "fallCon":False}).eq("id",0).execute()
+        # db.reference("/objectDetect").set(False)
+        # db.reference("/fallCon").set(False)
+        db.reference("/subjectStatus").set("0")
+        db.reference("/fallCon").set(fallCon)
         db.reference("/xPos").set("0")
         db.reference("/yPos").set("0")
         db.reference("/zPos").set("0")
     else:
-        supaData = supabase.table("data").update({"xPos":xPos, "yPos":yPos, "zPos":zPos, "detectObject":True ,"fallCon":fallCon}).eq("id",0).execute()
-        db.reference("/objectDetect").set(True)
+        # supaData = supabase.table("data").update({"xPos":xPos, "yPos":yPos, "zPos":zPos, "detectObject":True ,"fallCon":fallCon}).eq("id",0).execute()
+        # db.reference("/objectDetect").set(True)
+        # db.reference("/fallCon").set(fallCon)
+        db.reference("/subjectStatus").set(subjectStatus)
         db.reference("/fallCon").set(fallCon)
         db.reference("/xPos").set(xPos)
         db.reference("/yPos").set(yPos)
         db.reference("/zPos").set(zPos)
 
-    print("\n")
-    print(supaData)
+    # print("\n")
+    print("sent to fb = xPos:" + str(xPos) + " yPos:" + str(yPos) + " zPos:" + str(zPos) + " status:" + str(subjectStatus))
 
 class Window(QDialog):
     def __init__(self, parent=None, size=[]):
@@ -627,14 +644,14 @@ class Window(QDialog):
         self.numPointsDisplay = QLabel("Points: 0")
         self.numTargetsDisplay = QLabel("Targets: 0")
         self.avgPower = QLabel("Average Power: 0 mw")
-        self.fallDisplayStat = QLabel("Status: -")
+        # self.fallDisplayStat = QLabel("Status: -")
         self.statsLayout = QVBoxLayout()
         self.statsLayout.addWidget(self.frameNumDisplay)
         self.statsLayout.addWidget(self.plotTimeDisplay)
         self.statsLayout.addWidget(self.numPointsDisplay)
         self.statsLayout.addWidget(self.numTargetsDisplay)
         self.statsLayout.addWidget(self.avgPower)
-        self.statsLayout.addWidget(self.fallDisplayStat)
+        # self.statsLayout.addWidget(self.fallDisplayStat)
         self.statBox.setLayout(self.statsLayout)
 
     def fallDetDisplayChanged(self, newState):
@@ -653,7 +670,7 @@ class Window(QDialog):
         self.subjectStatusBox = QGroupBox("Subject Status")
         self.subjectSetupGrid = QGridLayout()
         self.subjectImgLabel = QLabel()
-        self.subjectSetupImg = QPixmap("image/emptySmall.jpg")
+        self.subjectSetupImg = QPixmap("images/1Small.png")
         self.subjectSetupGrid.addWidget(self.subjectImgLabel, 1, 1)
         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
         self.subjectStatusBox.setLayout(self.subjectSetupGrid)
@@ -3267,7 +3284,7 @@ if __name__ == "__main__":
         screen = app.primaryScreen()
         size = screen.size()
         main = Window(size=size)
-        main.show()
+        main.showMaximized()
         exit_code = appctxt.app.exec_()
         sys.exit(exit_code)
     else:
@@ -3276,5 +3293,5 @@ if __name__ == "__main__":
         screen = app.primaryScreen()
         size = screen.size()
         main = Window(size=size)
-        main.show()
+        main.showMaximized()
         sys.exit(app.exec_())
