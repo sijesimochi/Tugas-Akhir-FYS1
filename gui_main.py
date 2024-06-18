@@ -97,7 +97,7 @@ firstColumns = [(['TS','X-Pos', 'Y-Pos', 'Z-Pos', 'X-Vel', 'Y-Vel', 'Z-Vel', 'X-
 columns = ['TS','X-Pos', 'Y-Pos', 'Z-Pos', 'X-Vel', 'Y-Vel', 'Z-Vel', 'X-Acc', 'Y-Acc', 'Z-Acc']
 fileName = "rawData10.csv"
 
-df_new = pd.DataFrame(firstColumns, columns=columns, copy=False)
+# df_new = pd.DataFrame(firstColumns, columns=columns, copy=False)
 # df_new.to_csv(fileName, mode='a', index=False, header=False)
 
 # Create an empty DataFrame
@@ -244,7 +244,7 @@ def visualizePointCloud(heights, tracks, self):
                         fallStatVar = "Status: JATOHHHHHH!"
                         fallCon = True
                         subjectStatus = "2"
-                        # on_all()
+                        on_all()
                         self.subjectSetupImg = QPixmap("images/3Small.png")
                         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
@@ -254,11 +254,11 @@ def visualizePointCloud(heights, tracks, self):
                         # print("tidak jatuh")
                         fallCon = False
                         subjectStatus = "1"
-                        # off_all()
+                        off_all()
                         self.subjectSetupImg = QPixmap("images/2Small.png")
                         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
-                    self.fallDisplayStat.setText(fallStatVar)
+                    # self.fallDisplayStat.setText(fallStatVar)
                     self.coordStr[tid].setText(height_str)
                     self.coordStr[tid].setX(track[1])
                     self.coordStr[tid].setY(track[2])
@@ -278,7 +278,7 @@ def visualizePointCloud(heights, tracks, self):
         # self.subjectSetupImg = QPixmap("images/1Small.png")
 
         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
-        # off_all()
+        off_all()
 
 def sentToSupabase():
     global fallCon, xPos, yPos, zPos, detectObject, subjectStatus

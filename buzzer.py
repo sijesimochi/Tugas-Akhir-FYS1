@@ -119,8 +119,8 @@ def is_relay_on(relay_number):
     return read_relay_status(relay_number) > 0
 
 
-# get_Hid_USBRelay()
-# open_device()
+get_Hid_USBRelay()
+open_device()
 
 
 # print(" --- read_status_row: {}".format(read_status_row()))
