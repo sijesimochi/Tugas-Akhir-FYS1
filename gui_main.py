@@ -23,6 +23,7 @@ import joblib
 
 # Supabase
 from dotenv import load_dotenv
+
 load_dotenv()
 # from supabase import create_client
 
@@ -34,7 +35,7 @@ load_dotenv()
 import firebase_admin
 from firebase_admin import db, credentials
 
-cred = credentials.Certificate("credentials.json")
+cred = credentials.Certificate("C:/Users/jauza/Tugas-Akhir-FYS1/fire.json")
 firebase_admin.initialize_app(
     cred, {"databaseURL": "https://bath-mate-default-rtdb.firebaseio.com/"}
 )
@@ -92,10 +93,37 @@ from buzzer import *
 
 
 # ----- Defines -------------------------------------------------------
+base_dir = "C:/Users/Jauza/Tugas-Akhir-FYS1"
 compileGui = 0
 # Define column names
-firstColumns = [(['TS','X-Pos', 'Y-Pos', 'Z-Pos', 'X-Vel', 'Y-Vel', 'Z-Vel', 'X-Acc', 'Y-Acc', 'Z-Acc'])]
-columns = ['TS','X-Pos', 'Y-Pos', 'Z-Pos', 'X-Vel', 'Y-Vel', 'Z-Vel', 'X-Acc', 'Y-Acc', 'Z-Acc']
+firstColumns = [
+    (
+        [
+            "TS",
+            "X-Pos",
+            "Y-Pos",
+            "Z-Pos",
+            "X-Vel",
+            "Y-Vel",
+            "Z-Vel",
+            "X-Acc",
+            "Y-Acc",
+            "Z-Acc",
+        ]
+    )
+]
+columns = [
+    "TS",
+    "X-Pos",
+    "Y-Pos",
+    "Z-Pos",
+    "X-Vel",
+    "Y-Vel",
+    "Z-Vel",
+    "X-Acc",
+    "Y-Acc",
+    "Z-Acc",
+]
 fileName = "rawData10.csv"
 
 # df_new = pd.DataFrame(firstColumns, columns=columns, copy=False)
@@ -126,6 +154,7 @@ cachedData = cachedDataType()
 if compileGui:
     from fbs_runtime.application_context.PyQt5 import ApplicationContext
 
+
 # Preprocess Data
 ## Load Buffer 1 detik (Bagian Jauza)
 def fall_det(df):
@@ -140,7 +169,7 @@ def fall_det(df):
     merged = pd.DataFrame(merged)
 
     ## Load model
-    fall_det = joblib.load('model_voting.pkl')
+    fall_det = joblib.load(os.path.join(base_dir, "model_voting.pkl"))
     prediction = fall_det.predict(merged)
 
     return prediction
@@ -187,7 +216,7 @@ def get_trackColors(n):
     for i in range(n):
         # If within the length of the LUT, just grab values
         if i < len(modKellyColorsNorm):
-            trackColorList.append(modKellyColorsNorm[i])
+            trackColorList.append(modKellyColorsNorm[0])
         # Otherwise, generate a color from the average of two randomly selected colors, and add the new color to the list
         else:
             (r_2, g_2, b_2, _) = modKellyColorsNorm[
@@ -207,6 +236,7 @@ def get_trackColors(n):
 
 def next_power_of_2(x):
     return 1 if x == 0 else 2 ** (x - 1).bit_length()
+
 
 def visualizePointCloud(heights, tracks, self):
     global fallCon, xPos, yPos, zPos, detectObject, subjectStatus, rawDataToModel
@@ -238,9 +268,9 @@ def visualizePointCloud(heights, tracks, self):
                     # ts store timestamp of current time
                     ct = datetime.datetime.now()
                     ts = ct.timestamp()
-                    # print("\n\ndata :")
+                    # print("/n/ndata :")
                     # print(track[0:10])
-                    
+
                     rawData = track[1:10]
                     rawDataToModel = rawData
                     rawData = np.insert(rawData, 0, ts)
@@ -260,7 +290,7 @@ def visualizePointCloud(heights, tracks, self):
 
                     # Append the new data to the DataFrame
                     # df_new = pd.DataFrame(sent, columns=columns, copy=False)
-                    
+
                     # Save the updated DataFrame to Excel
                     # df_new.to_csv(fileName, mode='a', index=False, header=False)
 
@@ -274,11 +304,15 @@ def visualizePointCloud(heights, tracks, self):
                         on_all()
                         if fatalCon == True:
                             subjectStatus = "3"
-                            self.subjectSetupImg = QPixmap("images/4Small.jpg")
+                            self.subjectSetupImg = QPixmap(
+                                "C:/Users/jauza/Tugas-Akhir-FYS1/images/4Small.jpg"
+                            )
                             self.subjectImgLabel.setPixmap(self.subjectSetupImg)
                         else:
                             subjectStatus = "2"
-                            self.subjectSetupImg = QPixmap("images/3Small.jpg")
+                            self.subjectSetupImg = QPixmap(
+                                "C:/Users/jauza/Tugas-Akhir-FYS1/images/3Small.jpg"
+                            )
                             self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
                     else:
@@ -287,11 +321,13 @@ def visualizePointCloud(heights, tracks, self):
                         # fallStatVar = "Status: enjoy"
                         subjectStatus = "1"
                         off_all()
-                        self.subjectSetupImg = QPixmap("images/2Small.png")
+                        self.subjectSetupImg = QPixmap(
+                            "C:/Users/jauza/Tugas-Akhir-FYS1/images/2Small.png"
+                        )
                         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
                     # self.fallDisplayStat.setText(fallStatVar)
-                    
+
                     self.coordStr[tid].setText(height_str)
                     self.coordStr[tid].setX(track[1])
                     self.coordStr[tid].setY(track[2])
@@ -301,11 +337,15 @@ def visualizePointCloud(heights, tracks, self):
     else:
         if fallCon == True:
             subjectStatus = "2"
-            self.subjectSetupImg = QPixmap("images/3Small.jpg")
+            self.subjectSetupImg = QPixmap(
+                "C:/Users/jauza/Tugas-Akhir-FYS1/images/3Small.jpg"
+            )
             on_all()
         else:
             subjectStatus = "0"
-            self.subjectSetupImg = QPixmap("images/1Small.png")
+            self.subjectSetupImg = QPixmap(
+                "C:/Users/jauza/Tugas-Akhir-FYS1/images/1Small.png"
+            )
             off_all()
 
         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
@@ -335,8 +375,9 @@ def sentToFirebase():
         db.reference("/yPos").set(yPos)
         db.reference("/zPos").set(zPos)
 
-    # print("\n")
+    # print("/n")
     # print("sent to fb = xPos:" + str(xPos) + " yPos:" + str(yPos) + " zPos:" + str(zPos) + " status:" + str(subjectStatus))
+
 
 def sentToModel():
     global rawDataToModel, oneBatch, df
@@ -346,6 +387,7 @@ def sentToModel():
     df = pd.DataFrame(oneBatch)
     print(df)
 
+
 def predictFatalFall():
     global fatalCon, subjectStatus
     if fallCon == True:
@@ -353,7 +395,7 @@ def predictFatalFall():
         if fallCon == True:
             fatalCon = True
             # subjectStatus = "3"
-        else: 
+        else:
             fatalCon = False
             # subjectStatus = "2"
     else:
@@ -361,6 +403,7 @@ def predictFatalFall():
         # subjectStatus = "1"
 
     # print(fatalCon)
+
 
 class Window(QDialog):
     def __init__(self, parent=None, size=[]):
@@ -680,7 +723,7 @@ class Window(QDialog):
                 CLI_XDS_SERIAL_PORT_NAME in port.description
                 or CLI_SIL_SERIAL_PORT_NAME in port.description
             ):
-                print(f"\tCLI COM Port found: {port.device}")
+                print(f"/tCLI COM Port found: {port.device}")
                 comText = port.device
                 comText = comText.replace("COM", "")
                 self.cliCom.setText(comText)
@@ -689,7 +732,7 @@ class Window(QDialog):
                 DATA_XDS_SERIAL_PORT_NAME in port.description
                 or DATA_SIL_SERIAL_PORT_NAME in port.description
             ):
-                print(f"\tData COM Port found: {port.device}")
+                print(f"/tData COM Port found: {port.device}")
                 comText = port.device
                 comText = comText.replace("COM", "")
                 self.dataCom.setText(comText)
@@ -727,7 +770,9 @@ class Window(QDialog):
         self.subjectStatusBox = QGroupBox("Subject Status")
         self.subjectSetupGrid = QGridLayout()
         self.subjectImgLabel = QLabel()
-        self.subjectSetupImg = QPixmap("images/1Small.png")
+        self.subjectSetupImg = QPixmap(
+            "C:/Users/jauza/Tugas-Akhir-FYS1/images/1Small.png"
+        )
         self.subjectSetupGrid.addWidget(self.subjectImgLabel, 1, 1)
         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
         self.subjectStatusBox.setLayout(self.subjectSetupGrid)
@@ -1231,7 +1276,7 @@ class Window(QDialog):
             + self.az_tilt.text()
             + " "
             + self.elev_tilt.text()
-            + " \n"
+            + " /n"
         )
         # self.cThread = sendCommandThread(self.parser,command)
         # self.cThread.start(priority=QThread.HighestPriority-2)
@@ -1268,7 +1313,7 @@ class Window(QDialog):
                 # boxColor = pg.glColor(
                 #     box["color"].itemData(box["color"].currentIndex())
                 # )
-                boxColor = pg.glColor("c") 
+                boxColor = pg.glColor("c")
                 self.boundaryBoxViz[index].setData(
                     pos=boxLines, color=boxColor, width=2, antialias=True, mode="lines"
                 )
@@ -1399,7 +1444,7 @@ class Window(QDialog):
         # Create the background grid
         self.gz = gl.GLGridItem()
         self.pcplot.addItem(self.gz)
-        self.pcplot.pan(dx=0,dy=1.5,dz=1.2)
+        self.pcplot.pan(dx=0, dy=1.5, dz=1.2)
         self.pcplot.setCameraPosition(distance=6.8)
 
         # Create scatter plot for point cloud
@@ -2194,7 +2239,7 @@ class Window(QDialog):
             surfaceClassificationResult = None
         if error != 0:
             print("Parsing Error on frame: %d" % (self.frameNum))
-            print("\tError Number: %d" % (error))
+            print("/tError Number: %d" % (error))
 
         # Update text for display
         self.numPointsDisplay.setText("Points: " + str(numPoints))
@@ -2429,13 +2474,13 @@ class Window(QDialog):
 
         ## Visualize Target Heights
         # If fall detection is enabled
-        
+
         # If there are heights to display
         t1 = threading.Thread(target=visualizePointCloud, args=(heights, tracks, self))
         t2 = threading.Thread(target=sentToFirebase, args=())
         t3 = threading.Thread(target=sentToModel, args=())
         t4 = threading.Thread(target=predictFatalFall, args=())
-    
+
         t1.start()
         t2.start()
         t3.start()
@@ -2445,79 +2490,79 @@ class Window(QDialog):
         #     t1 = threading.Thread(target=visualizePointCloud, args=(heights, tracks, self))
         #     t2 = threading.Thread(target=sentToFirebase, args=())
         #     t3 = threading.Thread(target=sentToModel, args=())
-        
+
         #     t1.start()
         #     t2.start()
         #     t3.start()
 
-            # if heights is not None:
-            #     if len(heights) != len(tracks):
-            #         print("WARNING: number of heights does not match number of tracks")
-            #     # Compute the fall detection results for each object
-            #     fallDetectionDisplayResults = self.fallDetection.step(heights, tracks)
-            #     ## Display fall detection results
+        # if heights is not None:
+        #     if len(heights) != len(tracks):
+        #         print("WARNING: number of heights does not match number of tracks")
+        #     # Compute the fall detection results for each object
+        #     fallDetectionDisplayResults = self.fallDetection.step(heights, tracks)
+        #     ## Display fall detection results
 
-            #     # For each height heights for current tracks
-            #     sent = []
-            #     for height in heights:
-            #         # Find track with correct TID
-            #         for track in tracks:
-            #             # Found correct track
-            #             if int(track[0]) == int(height[0]):
-            #                 tid = int(height[0])
-            #                 height_str = (
-            #                     "tid : "
-            #                     + str(height[0])
-            #                     + ", height : "
-            #                     + str(round(height[1], 2))
-            #                     + " m"
-            #                 )
-            #                 # ts store timestamp of current time
-            #                 ct = datetime.datetime.now()
-            #                 ts = ct.timestamp()
-            #                 print("\n\ndata :")
-            #                 # print(track[0:10])
-                            
-            #                 rawData = track[1:10]
-            #                 xPos = track[1]
-            #                 yPos = track[2]
-            #                 zPos = track[3]
-            #                 rawData = np.insert(rawData, 0, ts)
-            #                 # print(rawData)
-            #                 # sent.append(ts)
-            #                 sent.append(rawData)
-            #                 print(sent)
-            #                 # print(tracks)
-            #                 # print(trackIndexs)
-            #                 # print(numPoints)
-            #                 # for i in range(numPoints):
-            #                 #     print(pointCloud[i,0], pointCloud[i,1], pointCloud[i,2], pointCloud[i,3])
-            #                 # If this track was computed to have fallen, display it on the screen
+        #     # For each height heights for current tracks
+        #     sent = []
+        #     for height in heights:
+        #         # Find track with correct TID
+        #         for track in tracks:
+        #             # Found correct track
+        #             if int(track[0]) == int(height[0]):
+        #                 tid = int(height[0])
+        #                 height_str = (
+        #                     "tid : "
+        #                     + str(height[0])
+        #                     + ", height : "
+        #                     + str(round(height[1], 2))
+        #                     + " m"
+        #                 )
+        #                 # ts store timestamp of current time
+        #                 ct = datetime.datetime.now()
+        #                 ts = ct.timestamp()
+        #                 print("/n/ndata :")
+        #                 # print(track[0:10])
 
-            #                 # # Append the new data to the DataFrame
-            #                 # df_new = pd.DataFrame(sent, columns=columns, copy=False)
-                            
-            #                 # # Save the updated DataFrame to Excel\
-            #                 # df_new.to_csv('rawData20.csv', mode='a', index=False, header=False)
+        #                 rawData = track[1:10]
+        #                 xPos = track[1]
+        #                 yPos = track[2]
+        #                 zPos = track[3]
+        #                 rawData = np.insert(rawData, 0, ts)
+        #                 # print(rawData)
+        #                 # sent.append(ts)
+        #                 sent.append(rawData)
+        #                 print(sent)
+        #                 # print(tracks)
+        #                 # print(trackIndexs)
+        #                 # print(numPoints)
+        #                 # for i in range(numPoints):
+        #                 #     print(pointCloud[i,0], pointCloud[i,1], pointCloud[i,2], pointCloud[i,3])
+        #                 # If this track was computed to have fallen, display it on the screen
 
-            #                 if fallDetectionDisplayResults[tid] > 0:
-            #                     height_str = height_str + " FALL DETECTED"
-            #                     fallStatVar = "Status: JATOHHHHHH!"
-            #                     fallCon = True
-            #                     # print("jatuh")
-            #                 else:
-            #                     fallStatVar = "Status: enjoy"
-            #                     fallCon = False
-            #                     # print("tidak jatuh")
+        #                 # # Append the new data to the DataFrame
+        #                 # df_new = pd.DataFrame(sent, columns=columns, copy=False)
 
-            #                 self.fallDisplayStat.setText(fallStatVar)
-            #                 self.coordStr[tid].setText(height_str)
-            #                 self.coordStr[tid].setX(track[1])
-            #                 self.coordStr[tid].setY(track[2])
-            #                 self.coordStr[tid].setZ(track[3])
-            #                 self.coordStr[tid].setVisible(True)
-            #                 break
-            
+        #                 # # Save the updated DataFrame to Excel/
+        #                 # df_new.to_csv('rawData20.csv', mode='a', index=False, header=False)
+
+        #                 if fallDetectionDisplayResults[tid] > 0:
+        #                     height_str = height_str + " FALL DETECTED"
+        #                     fallStatVar = "Status: JATOHHHHHH!"
+        #                     fallCon = True
+        #                     # print("jatuh")
+        #                 else:
+        #                     fallStatVar = "Status: enjoy"
+        #                     fallCon = False
+        #                     # print("tidak jatuh")
+
+        #                 self.fallDisplayStat.setText(fallStatVar)
+        #                 self.coordStr[tid].setText(height_str)
+        #                 self.coordStr[tid].setX(track[1])
+        #                 self.coordStr[tid].setY(track[2])
+        #                 self.coordStr[tid].setZ(track[3])
+        #                 self.coordStr[tid].setVisible(True)
+        #                 break
+
         # Point cloud Persistence
         numPersistentFrames = int(self.persistentFramesInput.currentText())
         if (
@@ -3003,7 +3048,7 @@ class Window(QDialog):
         # Specific functionality for various types of boxes
         # Point boundary box
         if "pointBounds" in name:
-            desc = "Remove points outside of this zone\nDefaults to last boundaryBox in .cfg"
+            desc = "Remove points outside of this zone/nDefaults to last boundaryBox in .cfg"
             self.boundaryBoxes[boxIndex]["description"].setText(desc)
             self.boundaryBoxes[boxIndex]["checkEnable"].setDisabled(False)
         # Zone occupancy box
