@@ -144,6 +144,7 @@ zPos = 0
 detectObject = False
 fallConDisplay = 0
 subjectStatus = "0"
+prediction = 0
 rawDataToModel = []
 oneBatch = []
 start_time = time.time()  # Current time in seconds since the epoch
@@ -239,7 +240,7 @@ def next_power_of_2(x):
 
 
 def visualizePointCloud(heights, tracks, self):
-    global fallCon, xPos, yPos, zPos, detectObject, subjectStatus, rawDataToModel
+    global fallCon, xPos, yPos, zPos, detectObject, subjectStatus, df
     if heights is not None:
         detectObject = True
         # subjectStatus = "1"
@@ -273,6 +274,12 @@ def visualizePointCloud(heights, tracks, self):
 
                     rawData = track[1:10]
                     rawDataToModel = rawData
+                    if len(oneBatch) >= 18:
+                        oneBatch.pop(0)
+                    oneBatch.append(rawDataToModel)
+                    df = pd.DataFrame(oneBatch)
+                    print(df)
+
                     rawData = np.insert(rawData, 0, ts)
                     xPos = track[1]
                     yPos = track[2]
@@ -295,7 +302,7 @@ def visualizePointCloud(heights, tracks, self):
                     # df_new.to_csv(fileName, mode='a', index=False, header=False)
 
                     # if fallDetectionDisplayResults[tid] > 0:
-                    prediction = fall_det(df)
+                    # prediction = fall_det(df)
                     if prediction == 1:
                         fallCon = True
                         height_str = height_str + " FALL DETECTED"
@@ -352,7 +359,7 @@ def visualizePointCloud(heights, tracks, self):
 
 
 def sentToFirebase():
-    global fallCon, xPos, yPos, zPos, detectObject, subjectStatus
+    global fallCon, xPos, yPos, zPos, detectObject, subjectStatus, fatalCon
 
     if detectObject == False:
         # supaData = supabase.table("data").update({"xPos":0, "yPos":0, "zPos":0, "detectObject":False, "fallCon":False}).eq("id",0).execute()
@@ -379,13 +386,9 @@ def sentToFirebase():
     # print("sent to fb = xPos:" + str(xPos) + " yPos:" + str(yPos) + " zPos:" + str(zPos) + " status:" + str(subjectStatus))
 
 
-def sentToModel():
-    global rawDataToModel, oneBatch, df
-    if len(oneBatch) >= 18:
-        oneBatch.pop(0)
-    oneBatch.append(rawDataToModel)
-    df = pd.DataFrame(oneBatch)
-    print(df)
+def predictModel():
+    global prediction, df
+    prediction = fall_det(df)
 
 
 def predictFatalFall():
@@ -394,13 +397,10 @@ def predictFatalFall():
         time.sleep(10)
         if fallCon == True:
             fatalCon = True
-            # subjectStatus = "3"
         else:
             fatalCon = False
-            # subjectStatus = "2"
     else:
         fatalCon = False
-        # subjectStatus = "1"
 
     # print(fatalCon)
 
@@ -2478,7 +2478,7 @@ class Window(QDialog):
         # If there are heights to display
         t1 = threading.Thread(target=visualizePointCloud, args=(heights, tracks, self))
         t2 = threading.Thread(target=sentToFirebase, args=())
-        t3 = threading.Thread(target=sentToModel, args=())
+        t3 = threading.Thread(target=predictModel, args=())
         t4 = threading.Thread(target=predictFatalFall, args=())
 
         t1.start()
