@@ -19,6 +19,7 @@ import pandas as pd
 import datetime
 import threading
 import asyncio
+import joblib
 
 # Supabase
 from dotenv import load_dotenv
@@ -108,18 +109,41 @@ fileName = "rawData10.csv"
 
 # global fallCon, xPos, yPos, zPos
 fallCon = False
+fatalCon = False
 xPos = 0
 yPos = 0
 zPos = 0
 detectObject = False
 fallConDisplay = 0
 subjectStatus = "0"
+rawDataToModel = []
+oneBatch = []
+start_time = time.time()  # Current time in seconds since the epoch
 
 # CachedData holds the data from the last configuration run for faster prototyping and testing
 cachedData = cachedDataType()
 # Only when compiling
 if compileGui:
     from fbs_runtime.application_context.PyQt5 import ApplicationContext
+
+# Preprocess Data
+## Load Buffer 1 detik (Bagian Jauza)
+def fall_det(df):
+    ## Transform Mean
+    mean = np.mean(df, axis=0)
+
+    ## Transform Variance
+    var = np.var(df, axis=0)
+
+    ## Gabungin jadi satu data frame
+    merged = np.concatenate((mean, var)).reshape(1, -1)
+    merged = pd.DataFrame(merged)
+
+    ## Load model
+    fall_det = joblib.load('model_voting.pkl')
+    prediction = fall_det.predict(merged)
+
+    return prediction
 
 
 # Create a list of N distict colors, visible on the black GUI background, for our tracks
@@ -185,7 +209,7 @@ def next_power_of_2(x):
     return 1 if x == 0 else 2 ** (x - 1).bit_length()
 
 def visualizePointCloud(heights, tracks, self):
-    global fallCon, xPos, yPos, zPos, detectObject, subjectStatus
+    global fallCon, xPos, yPos, zPos, detectObject, subjectStatus, rawDataToModel
     if heights is not None:
         detectObject = True
         # subjectStatus = "1"
@@ -193,7 +217,7 @@ def visualizePointCloud(heights, tracks, self):
         if len(heights) != len(tracks):
             print("WARNING: number of heights does not match number of tracks")
         # Compute the fall detection results for each object
-        fallDetectionDisplayResults = self.fallDetection.step(heights, tracks)
+        # fallDetectionDisplayResults = self.fallDetection.step(heights, tracks)
         ## Display fall detection results
 
         # For each height heights for current tracks
@@ -214,10 +238,11 @@ def visualizePointCloud(heights, tracks, self):
                     # ts store timestamp of current time
                     ct = datetime.datetime.now()
                     ts = ct.timestamp()
-                    print("\n\ndata :")
+                    # print("\n\ndata :")
                     # print(track[0:10])
                     
                     rawData = track[1:10]
+                    rawDataToModel = rawData
                     rawData = np.insert(rawData, 0, ts)
                     xPos = track[1]
                     yPos = track[2]
@@ -225,7 +250,7 @@ def visualizePointCloud(heights, tracks, self):
                     # print(rawData)
                     # sent.append(ts)
                     sent.append(rawData)
-                    print(sent)
+                    # print(sent)
                     # print(tracks)
                     # print(trackIndexs)
                     # print(numPoints)
@@ -234,31 +259,39 @@ def visualizePointCloud(heights, tracks, self):
                     # If this track was computed to have fallen, display it on the screen
 
                     # Append the new data to the DataFrame
-                    df_new = pd.DataFrame(sent, columns=columns, copy=False)
+                    # df_new = pd.DataFrame(sent, columns=columns, copy=False)
                     
                     # Save the updated DataFrame to Excel
                     # df_new.to_csv(fileName, mode='a', index=False, header=False)
 
-                    if fallDetectionDisplayResults[tid] > 0:
-                        height_str = height_str + " FALL DETECTED"
-                        fallStatVar = "Status: JATOHHHHHH!"
+                    # if fallDetectionDisplayResults[tid] > 0:
+                    prediction = fall_det(df)
+                    if prediction == 1:
                         fallCon = True
-                        subjectStatus = "2"
-                        on_all()
-                        self.subjectSetupImg = QPixmap("images/3Small.png")
-                        self.subjectImgLabel.setPixmap(self.subjectSetupImg)
-
+                        height_str = height_str + " FALL DETECTED"
                         # print("jatuh")
+                        # fallStatVar = "Status: JATOHHHHHH!"
+                        on_all()
+                        if fatalCon == True:
+                            subjectStatus = "3"
+                            self.subjectSetupImg = QPixmap("images/4Small.jpg")
+                            self.subjectImgLabel.setPixmap(self.subjectSetupImg)
+                        else:
+                            subjectStatus = "2"
+                            self.subjectSetupImg = QPixmap("images/3Small.jpg")
+                            self.subjectImgLabel.setPixmap(self.subjectSetupImg)
+
                     else:
-                        fallStatVar = "Status: enjoy"
-                        # print("tidak jatuh")
                         fallCon = False
+                        # print("tidak jatuh")
+                        # fallStatVar = "Status: enjoy"
                         subjectStatus = "1"
                         off_all()
                         self.subjectSetupImg = QPixmap("images/2Small.png")
                         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
                     # self.fallDisplayStat.setText(fallStatVar)
+                    
                     self.coordStr[tid].setText(height_str)
                     self.coordStr[tid].setX(track[1])
                     self.coordStr[tid].setY(track[2])
@@ -266,29 +299,28 @@ def visualizePointCloud(heights, tracks, self):
                     self.coordStr[tid].setVisible(True)
                     break
     else:
-        detectObject = False
-        if (fallCon == True):
+        if fallCon == True:
             subjectStatus = "2"
-            self.subjectSetupImg = QPixmap("images/3Small.png")
+            self.subjectSetupImg = QPixmap("images/3Small.jpg")
+            on_all()
         else:
             subjectStatus = "0"
             self.subjectSetupImg = QPixmap("images/1Small.png")
-
-        # subjectStatus = "0"
-        # self.subjectSetupImg = QPixmap("images/1Small.png")
+            off_all()
 
         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
-        off_all()
 
-def sentToSupabase():
+
+def sentToFirebase():
     global fallCon, xPos, yPos, zPos, detectObject, subjectStatus
 
     if detectObject == False:
         # supaData = supabase.table("data").update({"xPos":0, "yPos":0, "zPos":0, "detectObject":False, "fallCon":False}).eq("id",0).execute()
         # db.reference("/objectDetect").set(False)
         # db.reference("/fallCon").set(False)
-        db.reference("/subjectStatus").set("0")
+        db.reference("/subjectStatus").set(subjectStatus)
         db.reference("/fallCon").set(fallCon)
+        db.reference("/fatalFall").set(fatalCon)
         db.reference("/xPos").set("0")
         db.reference("/yPos").set("0")
         db.reference("/zPos").set("0")
@@ -298,12 +330,37 @@ def sentToSupabase():
         # db.reference("/fallCon").set(fallCon)
         db.reference("/subjectStatus").set(subjectStatus)
         db.reference("/fallCon").set(fallCon)
+        db.reference("/fatalFall").set(fatalCon)
         db.reference("/xPos").set(xPos)
         db.reference("/yPos").set(yPos)
         db.reference("/zPos").set(zPos)
 
     # print("\n")
-    print("sent to fb = xPos:" + str(xPos) + " yPos:" + str(yPos) + " zPos:" + str(zPos) + " status:" + str(subjectStatus))
+    # print("sent to fb = xPos:" + str(xPos) + " yPos:" + str(yPos) + " zPos:" + str(zPos) + " status:" + str(subjectStatus))
+
+def sentToModel():
+    global rawDataToModel, oneBatch, df
+    if len(oneBatch) >= 18:
+        oneBatch.pop(0)
+    oneBatch.append(rawDataToModel)
+    df = pd.DataFrame(oneBatch)
+    print(df)
+
+def predictFatalFall():
+    global fatalCon, subjectStatus
+    if fallCon == True:
+        time.sleep(10)
+        if fallCon == True:
+            fatalCon = True
+            # subjectStatus = "3"
+        else: 
+            fatalCon = False
+            # subjectStatus = "2"
+    else:
+        fatalCon = False
+        # subjectStatus = "1"
+
+    # print(fatalCon)
 
 class Window(QDialog):
     def __init__(self, parent=None, size=[]):
@@ -2372,13 +2429,26 @@ class Window(QDialog):
 
         ## Visualize Target Heights
         # If fall detection is enabled
-        if self.displayFallDet.checkState() == 2:
-            # If there are heights to display
-            t1 = threading.Thread(target=visualizePointCloud, args=(heights, tracks, self))
-            t2 = threading.Thread(target=sentToSupabase, args=())
         
-            t1.start()
-            t2.start()
+        # If there are heights to display
+        t1 = threading.Thread(target=visualizePointCloud, args=(heights, tracks, self))
+        t2 = threading.Thread(target=sentToFirebase, args=())
+        t3 = threading.Thread(target=sentToModel, args=())
+        t4 = threading.Thread(target=predictFatalFall, args=())
+    
+        t1.start()
+        t2.start()
+        t3.start()
+        t4.start()
+        # if self.displayFallDet.checkState() == 2:
+        #     # If there are heights to display
+        #     t1 = threading.Thread(target=visualizePointCloud, args=(heights, tracks, self))
+        #     t2 = threading.Thread(target=sentToFirebase, args=())
+        #     t3 = threading.Thread(target=sentToModel, args=())
+        
+        #     t1.start()
+        #     t2.start()
+        #     t3.start()
 
             # if heights is not None:
             #     if len(heights) != len(tracks):
