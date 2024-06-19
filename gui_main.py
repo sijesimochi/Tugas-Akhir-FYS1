@@ -20,6 +20,8 @@ import datetime
 import threading
 import asyncio
 import joblib
+from sklearn.ensemble import VotingClassifier
+from sklearn.naive_bayes import GaussianNB
 
 # Supabase
 from dotenv import load_dotenv
