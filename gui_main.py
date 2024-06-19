@@ -148,6 +148,7 @@ prediction = 0
 rawDataToModel = []
 oneBatch = []
 start_time = time.time()  # Current time in seconds since the epoch
+df = [[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],]
 
 # CachedData holds the data from the last configuration run for faster prototyping and testing
 cachedData = cachedDataType()
@@ -269,8 +270,6 @@ def visualizePointCloud(heights, tracks, self):
                     # ts store timestamp of current time
                     ct = datetime.datetime.now()
                     ts = ct.timestamp()
-                    # print("/n/ndata :")
-                    # print(track[0:10])
 
                     rawData = track[1:10]
                     rawDataToModel = rawData
@@ -288,7 +287,7 @@ def visualizePointCloud(heights, tracks, self):
                     # sent.append(ts)
                     sent.append(rawData)
                     # print(sent)
-                    # print(tracks)
+                    # print("Xpos:" + str(xPos) + " Ypos:" + str(yPos) + " Zpos:" + str(zPos))
                     # print(trackIndexs)
                     # print(numPoints)
                     # for i in range(numPoints):
@@ -308,7 +307,7 @@ def visualizePointCloud(heights, tracks, self):
                         height_str = height_str + " FALL DETECTED"
                         # print("jatuh")
                         # fallStatVar = "Status: JATOHHHHHH!"
-                        on_all()
+                        # on_all()
                         if fatalCon == True:
                             subjectStatus = "3"
                             self.subjectSetupImg = QPixmap(
@@ -327,7 +326,7 @@ def visualizePointCloud(heights, tracks, self):
                         # print("tidak jatuh")
                         # fallStatVar = "Status: enjoy"
                         subjectStatus = "1"
-                        off_all()
+                        # off_all()
                         self.subjectSetupImg = QPixmap(
                             "C:/Users/jauza/Tugas-Akhir-FYS1/images/2Small.png"
                         )
@@ -347,13 +346,13 @@ def visualizePointCloud(heights, tracks, self):
             self.subjectSetupImg = QPixmap(
                 "C:/Users/jauza/Tugas-Akhir-FYS1/images/3Small.jpg"
             )
-            on_all()
+            # on_all()
         else:
             subjectStatus = "0"
             self.subjectSetupImg = QPixmap(
                 "C:/Users/jauza/Tugas-Akhir-FYS1/images/1Small.png"
             )
-            off_all()
+            # off_all()
 
         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
@@ -392,7 +391,7 @@ def predictModel():
 
 
 def predictFatalFall():
-    global fatalCon, subjectStatus
+    global fatalCon
     if fallCon == True:
         time.sleep(10)
         if fallCon == True:
