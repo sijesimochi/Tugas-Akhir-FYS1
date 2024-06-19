@@ -37,7 +37,8 @@ load_dotenv()
 import firebase_admin
 from firebase_admin import db, credentials
 
-cred = credentials.Certificate("C:/Users/jauza/Tugas-Akhir-FYS1/fire.json")
+base_dir = "C:/Users/Jauza/Tugas-Akhir-FYS1"
+cred = credentials.Certificate(os.path.join(base_dir, "fire.json"))
 firebase_admin.initialize_app(
     cred, {"databaseURL": "https://bath-mate-default-rtdb.firebaseio.com/"}
 )
@@ -95,7 +96,6 @@ from buzzer import *
 
 
 # ----- Defines -------------------------------------------------------
-base_dir = "C:/Users/Jauza/Tugas-Akhir-FYS1"
 compileGui = 0
 # Define column names
 firstColumns = [
