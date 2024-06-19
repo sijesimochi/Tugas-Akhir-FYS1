@@ -307,18 +307,14 @@ def visualizePointCloud(heights, tracks, self):
                         height_str = height_str + " FALL DETECTED"
                         # print("jatuh")
                         # fallStatVar = "Status: JATOHHHHHH!"
-                        # on_all()
+                        on_all()
                         if fatalCon == True:
                             subjectStatus = "3"
-                            self.subjectSetupImg = QPixmap(
-                                "C:/Users/jauza/Tugas-Akhir-FYS1/images/4Small.jpg"
-                            )
+                            self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/4Small.jpg"))
                             self.subjectImgLabel.setPixmap(self.subjectSetupImg)
                         else:
                             subjectStatus = "2"
-                            self.subjectSetupImg = QPixmap(
-                                "C:/Users/jauza/Tugas-Akhir-FYS1/images/3Small.jpg"
-                            )
+                            self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/3Small.jpg"))
                             self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
                     else:
@@ -326,14 +322,11 @@ def visualizePointCloud(heights, tracks, self):
                         # print("tidak jatuh")
                         # fallStatVar = "Status: enjoy"
                         subjectStatus = "1"
-                        # off_all()
-                        self.subjectSetupImg = QPixmap(
-                            "C:/Users/jauza/Tugas-Akhir-FYS1/images/2Small.png"
-                        )
+                        off_all()
+                        self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/2Small.png"))
                         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
                     # self.fallDisplayStat.setText(fallStatVar)
-
                     self.coordStr[tid].setText(height_str)
                     self.coordStr[tid].setX(track[1])
                     self.coordStr[tid].setY(track[2])
@@ -343,16 +336,12 @@ def visualizePointCloud(heights, tracks, self):
     else:
         if fallCon == True:
             subjectStatus = "2"
-            self.subjectSetupImg = QPixmap(
-                "C:/Users/jauza/Tugas-Akhir-FYS1/images/3Small.jpg"
-            )
-            # on_all()
+            self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/3Small.jpg"))
+            on_all()
         else:
             subjectStatus = "0"
-            self.subjectSetupImg = QPixmap(
-                "C:/Users/jauza/Tugas-Akhir-FYS1/images/1Small.png"
-            )
-            # off_all()
+            self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/1Small.png"))
+            off_all()
 
         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
@@ -769,9 +758,7 @@ class Window(QDialog):
         self.subjectStatusBox = QGroupBox("Subject Status")
         self.subjectSetupGrid = QGridLayout()
         self.subjectImgLabel = QLabel()
-        self.subjectSetupImg = QPixmap(
-            "C:/Users/jauza/Tugas-Akhir-FYS1/images/1Small.png"
-        )
+        self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/1Small.png"))
         self.subjectSetupGrid.addWidget(self.subjectImgLabel, 1, 1)
         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
         self.subjectStatusBox.setLayout(self.subjectSetupGrid)
