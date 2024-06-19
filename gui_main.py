@@ -18,7 +18,6 @@ import collections
 import pandas as pd
 import datetime
 import threading
-import asyncio
 import joblib
 from sklearn.ensemble import VotingClassifier
 from sklearn.naive_bayes import GaussianNB
@@ -263,9 +262,7 @@ def visualizePointCloud(heights, tracks, self):
                 if int(track[0]) == int(height[0]):
                     tid = int(height[0])
                     height_str = (
-                        "tid : "
-                        + str(height[0])
-                        + ", height : "
+                        "Height : "
                         + str(round(height[1], 2))
                         + " m"
                     )
@@ -313,11 +310,11 @@ def visualizePointCloud(heights, tracks, self):
                         if fatalCon == True:
                             subjectStatus = "3"
                             self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/4Small.jpg"))
-                            self.subjectImgLabel.setPixmap(self.subjectSetupImg)
+                            # self.subjectImgLabel.setPixmap(self.subjectSetupImg)
                         else:
                             subjectStatus = "2"
                             self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/3Small.jpg"))
-                            self.subjectImgLabel.setPixmap(self.subjectSetupImg)
+                            # self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
                     else:
                         fallCon = False
@@ -326,14 +323,18 @@ def visualizePointCloud(heights, tracks, self):
                         subjectStatus = "1"
                         off_all()
                         self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/2Small.png"))
-                        self.subjectImgLabel.setPixmap(self.subjectSetupImg)
+                        # self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
                     # self.fallDisplayStat.setText(fallStatVar)
+                    self.subjectImgLabel.setPixmap(self.subjectSetupImg)
                     self.coordStr[tid].setText(height_str)
                     self.coordStr[tid].setX(track[1])
                     self.coordStr[tid].setY(track[2])
                     self.coordStr[tid].setZ(track[3])
                     self.coordStr[tid].setVisible(True)
+                    self.plotXPos.setText("X-Pos: " + str(xPos))
+                    self.plotYPos.setText("Y-Pos: " + str(yPos))
+                    self.plotZPos.setText("Z-Pos: " + str(zPos))
                     break
     else:
         if fallCon == True:
@@ -341,36 +342,28 @@ def visualizePointCloud(heights, tracks, self):
             self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/3Small.jpg"))
             on_all()
         else:
+            xPos = 0
+            yPos = 0
+            zPos = 0
             subjectStatus = "0"
             self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/1Small.png"))
             off_all()
-
+        
+        self.plotXPos.setText("X-Pos: " + str(xPos))
+        self.plotYPos.setText("Y-Pos: " + str(yPos))
+        self.plotZPos.setText("Z-Pos: " + str(zPos))
         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
 
 def sentToFirebase():
     global fallCon, xPos, yPos, zPos, detectObject, subjectStatus, fatalCon
 
-    if detectObject == False:
-        # supaData = supabase.table("data").update({"xPos":0, "yPos":0, "zPos":0, "detectObject":False, "fallCon":False}).eq("id",0).execute()
-        # db.reference("/objectDetect").set(False)
-        # db.reference("/fallCon").set(False)
-        db.reference("/subjectStatus").set(subjectStatus)
-        db.reference("/fallCon").set(fallCon)
-        db.reference("/fatalFall").set(fatalCon)
-        db.reference("/xPos").set("0")
-        db.reference("/yPos").set("0")
-        db.reference("/zPos").set("0")
-    else:
-        # supaData = supabase.table("data").update({"xPos":xPos, "yPos":yPos, "zPos":zPos, "detectObject":True ,"fallCon":fallCon}).eq("id",0).execute()
-        # db.reference("/objectDetect").set(True)
-        # db.reference("/fallCon").set(fallCon)
-        db.reference("/subjectStatus").set(subjectStatus)
-        db.reference("/fallCon").set(fallCon)
-        db.reference("/fatalFall").set(fatalCon)
-        db.reference("/xPos").set(xPos)
-        db.reference("/yPos").set(yPos)
-        db.reference("/zPos").set(zPos)
+    db.reference("/subjectStatus").set(subjectStatus)
+    db.reference("/fallCon").set(fallCon)
+    db.reference("/fatalFall").set(fatalCon)
+    db.reference("/xPos").set(xPos)
+    db.reference("/yPos").set(yPos)
+    db.reference("/zPos").set(zPos)
 
     # print("/n")
     # print("sent to fb = xPos:" + str(xPos) + " yPos:" + str(yPos) + " zPos:" + str(zPos) + " status:" + str(subjectStatus))
@@ -384,7 +377,7 @@ def predictModel():
 def predictFatalFall():
     global fatalCon
     if fallCon == True:
-        time.sleep(10)
+        time.sleep(20)
         if fallCon == True:
             fatalCon = True
         else:
@@ -614,7 +607,7 @@ class Window(QDialog):
         # Set the layout
         # Create tab for different graphing options
         self.graphTabs = QTabWidget()
-        self.graphTabs.addTab(self.pcplot, "3D Plot")
+        self.graphTabs.addTab(self.pcplot, "Subject Point")
         # self.graphTabs.addTab(self.rangePlot, "Range Plot")
         self.graphTabs.currentChanged.connect(self.whoVisible)
 
@@ -730,17 +723,20 @@ class Window(QDialog):
     def initStatsPane(self):
         self.statBox = QGroupBox("Statistics")
         self.frameNumDisplay = QLabel("Frame: 0")
-        self.plotTimeDisplay = QLabel("Average Plot Time: 0 ms")
         self.numPointsDisplay = QLabel("Points: 0")
-        self.numTargetsDisplay = QLabel("Targets: 0")
-        self.avgPower = QLabel("Average Power: 0 mw")
+        # self.plotTimeDisplay = QLabel("Average Plot Time: 0 ms")
+        # self.numTargetsDisplay = QLabel("Targets: 0")
+        # self.avgPower = QLabel("Average Power: 0 mw")
+        self.plotXPos = QLabel("X-Pos: 0")
+        self.plotYPos = QLabel("Y-Pos: 0")
+        self.plotZPos = QLabel("Z-Pos: 0")
         # self.fallDisplayStat = QLabel("Status: -")
         self.statsLayout = QVBoxLayout()
         self.statsLayout.addWidget(self.frameNumDisplay)
-        self.statsLayout.addWidget(self.plotTimeDisplay)
         self.statsLayout.addWidget(self.numPointsDisplay)
-        self.statsLayout.addWidget(self.numTargetsDisplay)
-        self.statsLayout.addWidget(self.avgPower)
+        self.statsLayout.addWidget(self.plotXPos)
+        self.statsLayout.addWidget(self.plotYPos)
+        self.statsLayout.addWidget(self.plotZPos)
         # self.statsLayout.addWidget(self.fallDisplayStat)
         self.statBox.setLayout(self.statsLayout)
 
@@ -2231,7 +2227,7 @@ class Window(QDialog):
 
         # Update text for display
         self.numPointsDisplay.setText("Points: " + str(numPoints))
-        self.numTargetsDisplay.setText("Targets: " + str(numTracks))
+        # self.numTargetsDisplay.setText("Targets: " + str(numTracks))
 
         # Rotate point cloud and tracks to account for elevation and azimuth tilt
         if self.profile["elev_tilt"] != 0 or self.profile["az_tilt"] != 0:
@@ -2931,7 +2927,7 @@ class Window(QDialog):
         pltstr = "Average Plot time: " + str(plotime)[:5] + " ms"
         fnstr = "Frame: " + str(self.frameNum)
         self.frameNumDisplay.setText(fnstr)
-        self.plotTimeDisplay.setText(pltstr)
+        # self.plotTimeDisplay.setText(pltstr)
 
     def resetFallText(self):
         self.fallAlert.setText("Standing")
