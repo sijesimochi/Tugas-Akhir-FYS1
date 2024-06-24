@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split, cross_val_score, Stratifie
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
-from sklearn.ensemble import VotingClassifier
+from sklearn.svm import SVC
 
 from sklearn.metrics import classification_report, ConfusionMatrixDisplay
 
@@ -43,16 +43,22 @@ X_train, X_val, Y_train, Y_val = train_test_split(X, Y, test_size=0.10, random_s
 
 dt = DecisionTreeClassifier()
 dt.fit(X_train, Y_train)
-dt_predictions = dt.predict(X_val)
+# dt_predictions = dt.predict(X_val)
 
 nb = GaussianNB()
 nb.fit(X_train, Y_train)
-nb_predictions = nb.predict(X_val)
+# nb_predictions = nb.predict(X_val)
 
 knn = KNeighborsClassifier()
 knn.fit(X_train, Y_train)
-knn_predictions = knn.predict(X_val)
+# knn_predictions = knn.predict(X_val)
 
-joblib.dump(dt, 'decisionTree.pkl')
-joblib.dump(knn, 'knn.pkl')
-joblib.dump(nb, 'naivebayes.pkl')
+svm = SVC()
+svm.fit(X_train, Y_train)
+# svm_predictions = svm.predict(X_val)
+
+
+joblib.dump(dt, 'Model/decisionTree.pkl')
+joblib.dump(knn, 'Model/knn.pkl')
+joblib.dump(nb, 'Model/naivebayes.pkl')
+joblib.dump(svm, 'Model/svm.pkl')
