@@ -36,8 +36,8 @@ load_dotenv()
 import firebase_admin
 from firebase_admin import db, credentials
 
-base_dir = "C:/Users/Jauza/Tugas-Akhir-FYS1"
-cred = credentials.Certificate(os.path.join(base_dir, "fire.json"))
+base_dir = "C:/FYS1/New Folder/Tugas-Akhir-FYS1"
+cred = credentials.Certificate(os.path.join(base_dir, "credentials.json"))
 firebase_admin.initialize_app(
     cred, {"databaseURL": "https://bath-mate-default-rtdb.firebaseio.com/"}
 )
@@ -172,7 +172,7 @@ def fall_det(df):
     merged = pd.DataFrame(merged)
 
     ## Load model
-    fall_det = joblib.load(os.path.join(base_dir, "model_voting.pkl"))
+    fall_det = joblib.load(os.path.join(base_dir, "Model/Drop Xpos and Ypos/svm.pkl"))
     prediction = fall_det.predict(merged)
 
     return prediction
@@ -271,7 +271,7 @@ def visualizePointCloud(heights, tracks, self):
                     ts = ct.timestamp()
 
                     rawData = track[1:10]
-                    rawDataToModel = rawData
+                    rawDataToModel = track[3:10]
                     if len(oneBatch) >= 18:
                         oneBatch.pop(0)
                     oneBatch.append(rawDataToModel)

@@ -28,14 +28,16 @@ var_csv = pd.read_csv(var_path)
 mean_csv = mean_csv.drop(columns=["label"])
 mean_csv = mean_csv.add_suffix("_mean")
 mean_csv.columns = mean_csv.columns.str.replace("Unnamed: 0_mean", "index")
+mean_csv = mean_csv.drop(['xpos_mean', 'ypos_mean'], axis=1)
 
 var_csv = var_csv.add_suffix("_var")
 var_csv.columns = var_csv.columns.str.replace("Unnamed: 0_var", 'index')
 var_csv.columns = var_csv.columns.str.replace("label_var", 'label')
+var_csv = var_csv.drop(['xpos_var', 'ypos_var'], axis=1)
 
 merged = mean_csv.merge(var_csv, on='index')
 
-features = merged.drop(['xpos_mean', 'ypos_mean', 'xpos_var', 'ypos_var'], axis=1)
+features = merged.drop(['index','label'], axis=1)
 X = features.values
 Y = merged['label'].values
 
