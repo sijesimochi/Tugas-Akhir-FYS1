@@ -35,7 +35,7 @@ var_csv.columns = var_csv.columns.str.replace("label_var", 'label')
 
 merged = mean_csv.merge(var_csv, on='index')
 
-features = merged.drop(['label', 'index'], axis=1)
+features = merged.drop(['xpos_mean', 'ypos_mean', 'xpos_var', 'ypos_var'], axis=1)
 X = features.values
 Y = merged['label'].values
 
@@ -58,7 +58,7 @@ svm.fit(X_train, Y_train)
 # svm_predictions = svm.predict(X_val)
 
 
-joblib.dump(dt, 'Model/decisionTree.pkl')
-joblib.dump(knn, 'Model/knn.pkl')
-joblib.dump(nb, 'Model/naivebayes.pkl')
-joblib.dump(svm, 'Model/svm.pkl')
+joblib.dump(dt, 'Model/Drop Xpos and Ypos/decisionTree.pkl')
+joblib.dump(knn, 'Model/Drop Xpos and Ypos/knn.pkl')
+joblib.dump(nb, 'Model/Drop Xpos and Ypos/naivebayes.pkl')
+joblib.dump(svm, 'Model/Drop Xpos and Ypos/svm.pkl')
