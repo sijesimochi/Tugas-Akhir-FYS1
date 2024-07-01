@@ -21,6 +21,7 @@ import threading
 import joblib
 from sklearn.ensemble import VotingClassifier
 from sklearn.naive_bayes import GaussianNB
+# import sklearn
 
 # Supabase
 from dotenv import load_dotenv
@@ -172,7 +173,7 @@ def fall_det(df):
     merged = pd.DataFrame(merged)
 
     ## Load model
-    fall_det = joblib.load(os.path.join(base_dir, "model_voting.pkl"))
+    fall_det = joblib.load(os.path.join(base_dir, "model/knn.pkl"))
     prediction = fall_det.predict(merged)
 
     return prediction
@@ -309,11 +310,11 @@ def visualizePointCloud(heights, tracks, self):
                         on_all()
                         if fatalCon == True:
                             subjectStatus = "3"
-                            self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/4Small.jpg"))
+                            self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/4Small.png"))
                             # self.subjectImgLabel.setPixmap(self.subjectSetupImg)
                         else:
                             subjectStatus = "2"
-                            self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/3Small.jpg"))
+                            self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/3Small.png"))
                             # self.subjectImgLabel.setPixmap(self.subjectSetupImg)
 
                     else:
@@ -339,7 +340,7 @@ def visualizePointCloud(heights, tracks, self):
     else:
         if fallCon == True:
             subjectStatus = "2"
-            self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/3Small.jpg"))
+            self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/3Small.png"))
             on_all()
         else:
             xPos = 0
