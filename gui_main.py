@@ -26,10 +26,10 @@ from sklearn.naive_bayes import GaussianNB
 import firebase_admin
 from firebase_admin import db, credentials, messaging
 
-base_dir = "C:/Users/Jauza/Tugas-Akhir-FYS1-v2"
-cred = credentials.Certificate(os.path.join(base_dir, "fire.json"))
+base_dir = "ABSOLUTE/PATH/TO/THIS/DIRECTORY"
+cred = credentials.Certificate(os.path.join(base_dir, "YOURAPIKEYHERE"))
 firebase_admin.initialize_app(
-    cred, {"databaseURL": "https://bath-mate-default-rtdb.firebaseio.com/"}
+    cred, {"databaseURL": "YOURDATABASEURLHERE"}
 )
 ref = db.reference("/")
 
