@@ -1,7 +1,7 @@
 import pywinusb.hid as hid
 from time import sleep
 
-USB_CFG_VENDOR_ID = 0x16c0  # Should suit, if not check ID with a tool like USBDeview
+USB_CFG_VENDOR_ID = 0x16C0  # Should suit, if not check ID with a tool like USBDeview
 USB_CFG_DEVICE_ID = 0x05DF  # Should suit, if not check ID with a tool like USBDeview
 
 filter = None
@@ -14,7 +14,9 @@ last_row_status = None
 
 def get_Hid_USBRelay():
     global filter, hid_device, device
-    filter = hid.HidDeviceFilter(vendor_id=USB_CFG_VENDOR_ID, product_id=USB_CFG_DEVICE_ID)
+    filter = hid.HidDeviceFilter(
+        vendor_id=USB_CFG_VENDOR_ID, product_id=USB_CFG_DEVICE_ID
+    )
     hid_device = filter.get_devices()
     device = hid_device[0]
 

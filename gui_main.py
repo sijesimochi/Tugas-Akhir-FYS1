@@ -22,22 +22,12 @@ import joblib
 from sklearn.ensemble import VotingClassifier
 from sklearn.naive_bayes import GaussianNB
 
-# Supabase
-from dotenv import load_dotenv
-
-load_dotenv()
-# from supabase import create_client
-
-# url = os.environ.get("SUPABASE_URL")
-# key= os.environ.get("SUPABASE_KEY")
-# supabase = create_client(url, key)
-
 # import firebase modules
 import firebase_admin
-from firebase_admin import db, credentials
+from firebase_admin import db, credentials, messaging
 
-base_dir = "C:/FYS1/New Folder/Tugas-Akhir-FYS1"
-cred = credentials.Certificate(os.path.join(base_dir, "credentials.json"))
+base_dir = "C:/Users/Jauza/Tugas-Akhir-FYS1-v2"
+cred = credentials.Certificate(os.path.join(base_dir, "fire.json"))
 firebase_admin.initialize_app(
     cred, {"databaseURL": "https://bath-mate-default-rtdb.firebaseio.com/"}
 )
@@ -90,7 +80,7 @@ from gui_parser import uartParser
 from graphUtilities import *
 from gui_common import *
 from cachedData import *
-from fall_detection import FallDetection, fallDetectionSliderClass
+# from fall_detection import FallDetection, fallDetectionSliderClass
 from buzzer import *
 
 
@@ -149,7 +139,208 @@ prediction = 0
 rawDataToModel = []
 oneBatch = []
 start_time = time.time()  # Current time in seconds since the epoch
-df = [[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],[0,0,0,0,0,0,0,0,0,],]
+df = [
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+    [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ],
+]
+sendJatuh = True
+sendFatal = True
 
 # CachedData holds the data from the last configuration run for faster prototyping and testing
 cachedData = cachedDataType()
@@ -159,7 +350,6 @@ if compileGui:
 
 
 # Preprocess Data
-## Load Buffer 1 detik (Bagian Jauza)
 def fall_det(df):
     ## Transform Mean
     mean = np.mean(df, axis=0)
@@ -172,7 +362,7 @@ def fall_det(df):
     merged = pd.DataFrame(merged)
 
     ## Load model
-    fall_det = joblib.load(os.path.join(base_dir, "Model/Drop Xpos and Ypos/svm.pkl"))
+    fall_det = joblib.load(os.path.join(base_dir, "Model/All 9 Features/svm.pkl"))
     prediction = fall_det.predict(merged)
 
     return prediction
@@ -261,17 +451,13 @@ def visualizePointCloud(heights, tracks, self):
                 # Found correct track
                 if int(track[0]) == int(height[0]):
                     tid = int(height[0])
-                    height_str = (
-                        "Height : "
-                        + str(round(height[1], 2))
-                        + " m"
-                    )
+                    height_str = "Height : " + str(round(height[1], 2)) + " m"
                     # ts store timestamp of current time
                     ct = datetime.datetime.now()
                     ts = ct.timestamp()
 
                     rawData = track[1:10]
-                    rawDataToModel = track[3:10]
+                    rawDataToModel = track[1:10]
                     if len(oneBatch) >= 18:
                         oneBatch.pop(0)
                     oneBatch.append(rawDataToModel)
@@ -299,33 +485,30 @@ def visualizePointCloud(heights, tracks, self):
                     # Save the updated DataFrame to Excel
                     # df_new.to_csv(fileName, mode='a', index=False, header=False)
 
-                    # if fallDetectionDisplayResults[tid] > 0:
-                    # prediction = fall_det(df)
                     if prediction == 1:
+                        on_all()
                         fallCon = True
                         height_str = height_str + " FALL DETECTED"
                         # print("jatuh")
-                        # fallStatVar = "Status: JATOHHHHHH!"
-                        on_all()
                         if fatalCon == True:
                             subjectStatus = "3"
-                            self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/4Small.jpg"))
-                            # self.subjectImgLabel.setPixmap(self.subjectSetupImg)
+                            self.subjectSetupImg = QPixmap(
+                                os.path.join(base_dir, "images/4Small.png")
+                            )
                         else:
                             subjectStatus = "2"
-                            self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/3Small.jpg"))
-                            # self.subjectImgLabel.setPixmap(self.subjectSetupImg)
-
+                            self.subjectSetupImg = QPixmap(
+                                os.path.join(base_dir, "images/3Small.png")
+                            )
                     else:
+                        off_all()
                         fallCon = False
                         # print("tidak jatuh")
-                        # fallStatVar = "Status: enjoy"
                         subjectStatus = "1"
-                        off_all()
-                        self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/2Small.png"))
-                        # self.subjectImgLabel.setPixmap(self.subjectSetupImg)
+                        self.subjectSetupImg = QPixmap(
+                            os.path.join(base_dir, "images/2Small.png")
+                        )
 
-                    # self.fallDisplayStat.setText(fallStatVar)
                     self.subjectImgLabel.setPixmap(self.subjectSetupImg)
                     self.coordStr[tid].setText(height_str)
                     self.coordStr[tid].setX(track[1])
@@ -338,17 +521,17 @@ def visualizePointCloud(heights, tracks, self):
                     break
     else:
         if fallCon == True:
-            subjectStatus = "2"
-            self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/3Small.jpg"))
             on_all()
+            subjectStatus = "2"
+            self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/3Small.png"))
         else:
+            off_all()
             xPos = 0
             yPos = 0
             zPos = 0
             subjectStatus = "0"
-            self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/1Small.png"))
-            off_all()
-        
+            self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/1Small.png"))
+
         self.plotXPos.setText("X-Pos: " + str(xPos))
         self.plotYPos.setText("Y-Pos: " + str(yPos))
         self.plotZPos.setText("Z-Pos: " + str(zPos))
@@ -356,17 +539,59 @@ def visualizePointCloud(heights, tracks, self):
 
 
 def sentToFirebase():
-    global fallCon, xPos, yPos, zPos, detectObject, subjectStatus, fatalCon
+    global xPos, yPos, zPos, detectObject, subjectStatus, sendJatuh, sendFatal, start_time
+
+    current_time = time.time()
+    timestamp = (
+        time.strftime("%H:%M:%S", time.localtime(current_time))
+        .lstrip("0")
+        .replace(" 0", " ")
+    )
+    print(f"Timestamp: {timestamp}")
+    db.reference("/timestamp").set(timestamp)
 
     db.reference("/subjectStatus").set(subjectStatus)
-    db.reference("/fallCon").set(fallCon)
-    db.reference("/fatalFall").set(fatalCon)
     db.reference("/xPos").set(xPos)
     db.reference("/yPos").set(yPos)
     db.reference("/zPos").set(zPos)
 
-    # print("/n")
-    # print("sent to fb = xPos:" + str(xPos) + " yPos:" + str(yPos) + " zPos:" + str(zPos) + " status:" + str(subjectStatus))
+    ref = db.reference("token")
+    tokens = ref.get()
+    # print(tokens)
+
+    # Define the message
+    messageJatuh = messaging.Message(
+        notification=messaging.Notification(
+            title="FALL Detected!!", body="Check your family now"
+        ),
+        token=tokens,
+        android=messaging.AndroidConfig(priority="high"),
+    )
+    messageJatuhFatal = messaging.Message(
+        notification=messaging.Notification(
+            title="FATAL FALL!!", body="Check your family immediatly"
+        ),
+        token=tokens,
+        android=messaging.AndroidConfig(priority="high"),
+    )
+
+    # Send the jatuh message
+    if fallCon == True:
+        if sendJatuh == False:
+            sendJatuh = True
+            response = messaging.send(messageJatuh)
+            print("Successfully sent message:", response)
+    else:
+        sendJatuh = False
+
+    # Send the jatuh fatal message
+    if fatalCon == True:
+        if sendFatal == False:
+            sendFatal = True
+            response = messaging.send(messageJatuhFatal)
+            print("Successfully sent message:", response)
+    else:
+        sendFatal = False
 
 
 def predictModel():
@@ -384,7 +609,6 @@ def predictFatalFall():
             fatalCon = False
     else:
         fatalCon = False
-
     # print(fatalCon)
 
 
@@ -400,7 +624,7 @@ class Window(QDialog):
             | Qt.WindowMaximizeButtonHint
             | Qt.WindowCloseButtonHint
         )
-        self.setWindowTitle("bathMate")
+        self.setWindowTitle("bathMateGUI")
 
         if (
             0
@@ -598,17 +822,15 @@ class Window(QDialog):
         self.initStatsPane()
         self.initPlotControlPane()
         self.fallCondition()
-        # self.initFallDetectPane()
         self.initConfigPane()
         self.initSensorPositionPane()
         self.initBoundaryBoxPane()
-        self.initVitalsPlots()
+        # self.initVitalsPlots()
 
         # Set the layout
         # Create tab for different graphing options
         self.graphTabs = QTabWidget()
         self.graphTabs.addTab(self.pcplot, "Subject Point")
-        # self.graphTabs.addTab(self.rangePlot, "Range Plot")
         self.graphTabs.currentChanged.connect(self.whoVisible)
 
         self.gridlay = QGridLayout()
@@ -616,16 +838,12 @@ class Window(QDialog):
         self.gridlay.addWidget(self.statBox, 1, 0, 1, 1)
         self.gridlay.addWidget(self.configBox, 2, 0, 1, 1)
         self.gridlay.addWidget(self.subjectStatusBox, 3, 0, 1, 1)
-        # self.gridlay.addWidget(self.plotControlBox, 3, 0, 1, 1)
-        # self.gridlay.addWidget(self.fallDetectionOptionsBox, 4, 0, 1, 1)
-        # self.gridlay.addWidget(self.spBox, 5, 0, 1, 1)
-        # self.gridlay.addWidget(self.boxTab, 6, 0, 1, 1)
         self.gridlay.setRowStretch(7, 1)  # Added to preserve spacing
         self.gridlay.addWidget(self.graphTabs, 0, 1, 8, 1)
         self.gridlay.addWidget(self.colorGradient, 0, 2, 8, 1)
-        self.gridlay.addWidget(self.vitalsPane, 0, 3, 8, 1)
+        # self.gridlay.addWidget(self.vitalsPane, 0, 3, 8, 1)
 
-        self.vitalsPane.setVisible(False)
+        # self.vitalsPane.setVisible(False)
         self.gridlay.setColumnStretch(0, 1)
         self.gridlay.setColumnStretch(1, 3)
         self.setLayout(self.gridlay)
@@ -638,13 +856,8 @@ class Window(QDialog):
         if deviceName != "":
             try:
                 self.deviceType.setCurrentIndex(DEVICE_LIST.index(deviceName))
-                # if deviceName == "IWR6843" or deviceName == "IWR1843":
                 if deviceName == "IWR6843":
                     self.parserType = "DoubleCOMPort"
-                # elif deviceName == "IWRL6432":
-                #     self.parserType = "SingleCOMPort"
-                # elif deviceName == "IWRL1432":
-                #     self.parserType = "SingleCOMPort"
             except:
                 print("Device not found. Using default option")
                 self.deviceType.setCurrentIndex(0)
@@ -653,11 +866,6 @@ class Window(QDialog):
             try:
                 if self.deviceType.currentText() in DEVICE_LIST:
                     self.configType.setCurrentIndex(x843_DEMO_TYPES.index(demoName))
-                    # self.configType.setCurrentIndex(DEMO_NAME_3DPC)
-                # if self.deviceType.currentText() in DEVICE_LIST[2:3]:
-                #     self.configType.setCurrentIndex(x432_DEMO_TYPES.index(demoName))
-                # if self.deviceType.currentText() in DEVICE_LIST[3:]:
-                #     self.configType.setCurrentIndex(xWRL1432_DEMO_TYPES.index(demoName))
 
             except:
                 print("Demo not found. Using default option")
@@ -678,20 +886,15 @@ class Window(QDialog):
         # TODO Add replay support
         self.configType.addItems(x843_DEMO_TYPES)
         self.configType.currentIndexChanged.connect(self.onChangeConfigType)
-        # self.deviceType.addItems(DEVICE_LIST)
         self.deviceType.currentIndexChanged.connect(self.onChangeDeviceType)
         self.comLayout = QGridLayout()
-        # self.comLayout.addWidget(QLabel("Device:"), 0, 0)
-        # self.comLayout.addWidget(self.deviceType, 0, 1)
         self.comLayout.addWidget(QLabel("CLI COM:"), 1, 0)
         self.comLayout.addWidget(self.cliCom, 1, 1)
         self.comLayout.addWidget(QLabel("DATA COM:"), 2, 0)
         self.comLayout.addWidget(self.dataCom, 2, 1)
-        # self.comLayout.addWidget(QLabel("Demo:"), 3, 0)
-        # self.comLayout.addWidget(self.configType, 3, 1)
         self.comLayout.addWidget(self.connectButton, 4, 0)
         self.comLayout.addWidget(self.connectStatus, 4, 1)
-        self.comLayout.addWidget(self.saveBinaryBox, 5, 0)
+        # self.comLayout.addWidget(self.saveBinaryBox, 5, 0)
         self.saveBinaryBox.stateChanged.connect(self.saveBinaryBoxChanged)
 
         self.comBox.setLayout(self.comLayout)
@@ -724,20 +927,15 @@ class Window(QDialog):
         self.statBox = QGroupBox("Statistics")
         self.frameNumDisplay = QLabel("Frame: 0")
         self.numPointsDisplay = QLabel("Points: 0")
-        # self.plotTimeDisplay = QLabel("Average Plot Time: 0 ms")
-        # self.numTargetsDisplay = QLabel("Targets: 0")
-        # self.avgPower = QLabel("Average Power: 0 mw")
         self.plotXPos = QLabel("X-Pos: 0")
         self.plotYPos = QLabel("Y-Pos: 0")
         self.plotZPos = QLabel("Z-Pos: 0")
-        # self.fallDisplayStat = QLabel("Status: -")
         self.statsLayout = QVBoxLayout()
         self.statsLayout.addWidget(self.frameNumDisplay)
         self.statsLayout.addWidget(self.numPointsDisplay)
         self.statsLayout.addWidget(self.plotXPos)
         self.statsLayout.addWidget(self.plotYPos)
         self.statsLayout.addWidget(self.plotZPos)
-        # self.statsLayout.addWidget(self.fallDisplayStat)
         self.statBox.setLayout(self.statsLayout)
 
     def fallDetDisplayChanged(self, newState):
@@ -756,7 +954,7 @@ class Window(QDialog):
         self.subjectStatusBox = QGroupBox("Subject Status")
         self.subjectSetupGrid = QGridLayout()
         self.subjectImgLabel = QLabel()
-        self.subjectSetupImg = QPixmap(os.path.join(base_dir,"images/1Small.png"))
+        self.subjectSetupImg = QPixmap(os.path.join(base_dir, "images/1Small.png"))
         self.subjectSetupGrid.addWidget(self.subjectImgLabel, 1, 1)
         self.subjectImgLabel.setPixmap(self.subjectSetupImg)
         self.subjectStatusBox.setLayout(self.subjectSetupGrid)
@@ -769,7 +967,6 @@ class Window(QDialog):
         )
         self.plotTracks = QCheckBox("Plot Tracks")
         self.displayFallDet = QCheckBox("Detect Falls")
-        # self.displayFallDet.stateChanged.connect(self.fallDetDisplayChanged)
         self.persistentFramesInput = QComboBox()
         self.persistentFramesInput.addItems(
             [str(i) for i in range(1, MAX_PERSISTENT_FRAMES + 1)]
@@ -789,27 +986,6 @@ class Window(QDialog):
         self.fallDetection.setFallSensitivity(
             ((self.fallDetSlider.value() / self.fallDetSlider.maximum()) * 0.4) + 0.4
         )  # Range from 0.4 to 0.8
-
-    # def initFallDetectPane(self):
-    #     self.fallDetectionOptionsBox = QGroupBox("Fall Detection Sensitivity")
-    #     self.fallDetLayout = QGridLayout()
-    #     self.fallDetSlider = fallDetectionSliderClass(Qt.Horizontal)
-    #     self.fallDetSlider.setTracking(True)
-    #     self.fallDetSlider.setTickPosition(QSlider.TicksBothSides)
-    #     self.fallDetSlider.setTickInterval(10)
-    #     self.fallDetSlider.setRange(0, 100)
-    #     self.fallDetSlider.setSliderPosition(50)
-    #     self.fallDetSlider.valueChanged.connect(self.updateFallDetectionSensitivity)
-    #     self.lessSensitiveLabel = QLabel("Less Sensitive")
-    #     self.fallDetLayout.addWidget(self.lessSensitiveLabel, 0, 0, 1, 1)
-    #     self.moreSensitiveLabel = QLabel("More Sensitive")
-    #     self.fallDetLayout.addWidget(self.moreSensitiveLabel, 0, 10, 1, 1)
-    #     self.fallDetLayout.addWidget(self.fallDetSlider, 1, 0, 1, 11)
-    #     self.fallDetectionOptionsBox.setLayout(self.fallDetLayout)
-    #     if self.displayFallDet.checkState() == 2:
-    #         self.fallDetectionOptionsBox.setVisible(True)
-    #     else:
-    #         self.fallDetectionOptionsBox.setVisible(False)
 
     def initConfigPane(self):
         self.configBox = QGroupBox("Configuration")
@@ -944,260 +1120,13 @@ class Window(QDialog):
         # First, undo any changes that the last demo made
         # These should be the inverse of the changes made in 2nd part of this function
 
-        # Undo OOB
-        # if self.prevConfig == DEMO_NAME_OOB:
-        #     # Unlock plot tracks
-        #     self.plotTracks.setChecked(True)
-        #     self.plotTracks.setDisabled(True)
-        # elif self.prevConfig == DEMO_NAME_x432_OOB:
-        #     # Unlock plot tracks
-        #     self.plotTracks.setChecked(True)
-        #     self.plotTracks.setDisabled(True)
-        # Undo 3D People Tracking
         if self.prevConfig == DEMO_NAME_3DPC:
             self.pointColorMode.setCurrentText(COLOR_MODE_SNR)
             self.displayFallDet.setChecked(True)
             self.displayFallDet.setDisabled(False)
-        # Undo Vitals
-        # elif self.prevConfig == DEMO_NAME_VITALS:
-        #     self.vitalsPane.setVisible(False)
-        #     self.pointColorMode.setCurrentText(COLOR_MODE_SNR)
-        # # Undo Long Range People Detection
-        # elif self.prevConfig == DEMO_NAME_LRPD:
-        #     self.pointColorMode.setCurrentText(COLOR_MODE_SNR)
-        # # Undo Mobile Tracker
-        # elif self.prevConfig == DEMO_NAME_MT:
-        #     self.pointColorMode.setCurrentText(COLOR_MODE_SNR)
-        # # Undo Small Obstacle
-        # elif self.prevConfig == DEMO_NAME_SOD:
-        #     # Unlock boundary box config
-        #     for box in self.boundaryBoxes:
-        #         if "occZone" in box["name"]:
-        #             # Unlock each text field
-        #             for textBox in box["boundList"]:
-        #                 textBox.setDisabled(False)
-        #             # Unlock enable box
-        #             box["checkEnable"].setDisabled(False)
-        #             box["color"].setDisabled(False)
-
-        #     # Unlock sensor position config
-        #     self.spBox.setDisabled(False)
-        # # Undo Gesture
-        # elif (
-        #     self.prevConfig == DEMO_NAME_GESTURE
-        #     or self.prevConfig == DEMO_NAME_x432_GESTURE
-        # ):
-        #     self.graphTabs.removeTab(0)
-        #     self.init3dGraph()
-        #     self.init1dGraph()
-        #     self.graphTabs.addTab(self.pcplot, "3D Plot")
-        #     self.graphTabs.addTab(self.rangePlot, "Range Plot")
-        #     self.graphTabs.currentChanged.connect(self.whoVisible)
-        #     if self.configType.currentText() == DEMO_NAME_x432_GESTURE:
-        #         self.gestureSetupBox.hide()
-        #     self.plotControlBox.show()
-        #     self.spBox.show()
-        #     self.boxTab.show()
-        # # Undo Surface Classification
-        # elif (
-        #     self.prevConfig == DEMO_NAME_SURFACE
-        #     or self.prevConfig == DEMO_NAME_x432_SURFACE
-        # ):
-        #     if self.prevConfig == DEMO_NAME_x432_SURFACE:
-        #         self.graphTabs.removeTab(0)
-        #     self.graphTabs.removeTab(0)
-        #     self.init3dGraph()
-        #     self.graphTabs.addTab(self.pcplot, "3D Plot")
-        #     self.init1dGraph()
-        #     self.graphTabs.addTab(self.rangePlot, "Range Plot")
-        #     self.graphTabs.currentChanged.connect(self.whoVisible)
-        #     self.surfaceSetupBox.hide()
-        #     self.plotControlBox.show()
-        #     self.spBox.show()
-        #     self.boxTab.show()
-        # # Undo Level Sensing
-        # elif (
-        #     self.prevConfig == DEMO_NAME_x432_LEVEL_SENSING
-        #     or self.prevConfig == DEMO_NAME_xWRL1432_LEVEL_SENSING
-        # ):
-        #     self.graphTabs.removeTab(0)
-        #     self.graphTabs.currentChanged.connect(self.whoVisible)
-        #     self.graphTabs.removeTab(0)
-        #     self.init3dGraph()
-        #     self.graphTabs.addTab(self.pcplot, "3D Plot")
-        #     self.init1dGraph()
-        #     self.graphTabs.addTab(self.rangePlot, "Range Plot")
-        #     self.plotControlBox.show()
-        #     self.spBox.show()
-        #     self.boxTab.show()
-
-        # Now, apply any specific GUI changes for the new demo
-        # Configure for Out of Box
-        # if newConfig == DEMO_NAME_OOB:
-        #     # Lock plot tracks off
-        #     self.plotTracks.setChecked(False)
-        #     self.plotTracks.setDisabled(False)
-        # Configure for x432 Out of Box
-        # elif newConfig == DEMO_NAME_x432_OOB:
-        #     self.pointColorMode.setCurrentText(COLOR_MODE_TRACK)
-        # Configure for 3D People Counting
         if newConfig == DEMO_NAME_3DPC:
             self.pointColorMode.setCurrentText(COLOR_MODE_TRACK)
             self.displayFallDet.setDisabled(False)
-        # Configure For Vitals
-        # elif newConfig == DEMO_NAME_VITALS:
-        #     self.pointColorMode.setCurrentText(COLOR_MODE_TRACK)
-        #     self.vitalsPane.setVisible(True)
-        # # Configure for Long Range People Detection
-        # elif newConfig == DEMO_NAME_LRPD:
-        #     self.pointColorMode.setCurrentText(COLOR_MODE_TRACK)
-        # # Configure for Mobile Tracker
-        # elif newConfig == DEMO_NAME_MT:
-        #     self.pointColorMode.setCurrentText(COLOR_MODE_TRACK)
-        # # Configure for Small Obstacle
-        # elif newConfig == DEMO_NAME_SOD:
-        #     # Lock boundary boxes for occ state machine
-        #     for box in self.boundaryBoxes:
-        #         if "occZone" in box["name"]:
-        #             # Lock each text field
-        #             for textBox in box["boundList"]:
-        #                 textBox.setDisabled(True)
-        #             # Lock enable box
-        #             box["checkEnable"].setDisabled(True)
-        #             box["color"].setDisabled(True)
-
-        #     # Lock sensor position config
-        #     self.s_height.setText("1")
-        #     self.az_tilt.setText("0")
-        #     self.elev_tilt.setText("0")
-        #     self.spBox.setDisabled(True)
-        #     self.onChangeSensorPosition()
-        # # Configure for Gesture
-        # elif newConfig == DEMO_NAME_GESTURE or newConfig == DEMO_NAME_x432_GESTURE:
-        #     # IWR6843 Gesture Recognition Demo
-        #     if newConfig == DEMO_NAME_GESTURE:
-        #         # Probability and count thresholds for post processing of neural network outputs
-        #         # [No Gesture, Gesture1, Gesture2, ...]
-        #         self.probabilityThresholds = [
-        #             0.99,
-        #             0.6,
-        #             0.6,
-        #             0.6,
-        #             0.6,
-        #             0.9,
-        #             0.9,
-        #             0.6,
-        #             0.6,
-        #             0.99,
-        #         ]
-        #         self.countThresholds = [4, 4, 4, 4, 4, 9, 9, 4, 4, 8]
-        #         self.numGestures = 9
-        #         self.contGestureFramecount = 10
-        #         # List of gesture strings
-        #         self.gestureList = [
-        #             "  No Gesture   ",
-        #             " Left to Right ",
-        #             " Right to Left ",
-        #             "  Up to Down   ",
-        #             "  Down to Up   ",
-        #             "   CW Twirl    ",
-        #             "   CCW Twirl   ",
-        #             "      On       ",
-        #             "      Off      ",
-        #             "     Shine     ",
-        #         ]
-        #         self.sumProbs = [0] * len(self.gestureList) * GESTURE_FEATURE_LENGTH
-        #         self.gesture_featurePlots = {}
-        #         self.gesture_featureVals = {
-        #             "dopplerAvgVals": [],
-        #             "rangeAvgVals": [],
-        #             "numPointsVals": [],
-        #         }
-        #     # IWRL6432 Gesture Recognition Demo
-        #     elif newConfig == DEMO_NAME_x432_GESTURE:
-        #         # self.currentGestureMode = GESTURE_GESTURE_MODE_x432
-        #         self.numGestures = 7
-        #         # List of gesture strings
-        #         self.gestureList = [
-        #             "  No Gesture   ",
-        #             " Left to Right ",
-        #             " Right to Left ",
-        #             "  Up to Down   ",
-        #             "  Down to Up   ",
-        #             "     Push      ",
-        #             "     Pull      ",
-        #         ]
-
-        #         self.gesture_featureVals = {
-        #             "dopplerAvgVals": [],
-        #             "rangeAvgVals": [],
-        #             "numPointsVals": [],
-        #         }
-        #         self.gesture_featurePlots = {}
-
-        #     self.currFramegesture = -1
-        #     self.prevFramegesture = -1
-
-        #     self.lastFrameProcd = -1
-
-        #     for i in range(self.graphTabs.count()):
-        #         self.graphTabs.removeTab(0)
-
-        #     self.initGestureTab()
-        #     self.graphTabs.addTab(self.gestureTab, "Gesture")
-        #     self.graphTabs.currentChanged.connect(self.whoVisible)
-        #     self.plotControlBox.hide()
-        #     self.spBox.hide()
-        #     self.boxTab.hide()
-
-        # Configure for Surface Classification
-        # elif newConfig == DEMO_NAME_SURFACE or newConfig == DEMO_NAME_x432_SURFACE:
-        #     # List of most recent frames of data collected. We will base our classification off of this
-        #     self.surfaceLatestResults = deque(100 * [0], 100)
-        #     # List of surfaces
-        #     self.surfaceList = ["Not Grass", "Grass"]
-        #     self.currFrameClassification = -1
-
-        #     self.init3dGraph()
-        #     self.init1dGraph()
-
-        #     for i in range(self.graphTabs.count()):
-        #         self.graphTabs.removeTab(0)
-
-        #     self.initSurfaceClassificationTab()
-        #     self.graphTabs.addTab(self.surfaceTab, "Surface Classification")
-        #     if newConfig == DEMO_NAME_x432_SURFACE:
-        #         self.graphTabs.addTab(self.rangePlot, "Range Plot")
-        #     self.graphTabs.currentChanged.connect(self.whoVisible)
-
-        #     self.plotControlBox.hide()
-        #     self.spBox.hide()
-        #     self.boxTab.hide()
-
-        # elif (
-        #     newConfig == DEMO_NAME_x432_LEVEL_SENSING
-        #     or newConfig == DEMO_NAME_xWRL1432_LEVEL_SENSING
-        # ):
-        #     for i in range(self.graphTabs.count()):
-        #         self.graphTabs.removeTab(0)
-
-        #     self.Peak1 = 0
-        #     self.Peak2 = 0
-        #     self.Peak3 = 0
-        #     self.Peak1Magnitude = 0
-        #     self.Peak2Magnitude = 0
-        #     self.Peak3Magnitude = 0
-        #     self.peakValues = []
-
-        #     self.initLevelSensingGraph()
-        #     self.graphTabs.addTab(self.levelsensingTab, "Level Sensing")
-        #     self.graphTabs.currentChanged.connect(self.whoVisible)
-
-        #     self.plotControlBox.hide()
-        #     self.spBox.hide()
-        #     self.boxTab.hide()
-
-        # Save this so that the next time we change configs we know what to undo
         self.prevConfig = newConfig
 
     # Callback function to reset settings when device is changed
@@ -1217,32 +1146,6 @@ class Window(QDialog):
             self.configType.setCurrentIndex(-1)
             self.configType.currentIndexChanged.connect(self.onChangeConfigType)
             self.configType.setCurrentIndex(0)
-
-        # if newDevice in DEVICE_LIST[2:3]:
-        #     self.configType.currentIndexChanged.disconnect()
-        #     self.dataCom.setText(self.cliCom.text())
-        #     self.dataCom.setEnabled(False)
-        #     self.configType.clear()
-        #     self.configType.addItems(x432_DEMO_TYPES)
-        #     self.parser.parserType = (
-        #         "SingleCOMPort"  # SingleCOMPort refers to xWRLx432 parts
-        #     )
-        #     self.configType.setCurrentIndex(-1)
-        #     self.configType.currentIndexChanged.connect(self.onChangeConfigType)
-        #     self.configType.setCurrentIndex(0)
-
-        # if newDevice in DEVICE_LIST[3:]:
-        #     self.configType.currentIndexChanged.disconnect()
-        #     self.dataCom.setText(self.cliCom.text())
-        #     self.dataCom.setEnabled(False)
-        #     self.configType.clear()
-        #     self.configType.addItems(xWRL1432_DEMO_TYPES)
-        #     self.parser.parserType = (
-        #         "SingleCOMPort"  # SingleCOMPort refers to xWRLx432 parts
-        #     )
-        #     self.configType.setCurrentIndex(-1)
-        #     self.configType.currentIndexChanged.connect(self.onChangeConfigType)
-        #     self.configType.setCurrentIndex(0)
 
     # Gets called whenever the sensor position box is modified
     def onChangeSensorPosition(self):
@@ -1324,97 +1227,6 @@ class Window(QDialog):
                 # When you enter a minus sign for a negative value, you will end up here before you type the full number
                 pass
 
-    def initVitalsPlots(self):
-        self.vitalsPane = QGroupBox("Vital Signs")
-        vitalsPaneLayout = QGridLayout()
-        self.vitals = []
-
-        for i in range(MAX_VITALS_PATIENTS):
-            patientDict = {}
-            patientName = "Patient" + str(i + 1)
-
-            # Initialize the pane and layout
-            patientPane = QGroupBox(patientName)
-            patientPaneLayout = QGridLayout()
-
-            # Set up basic labels so we can edit their appearance
-            statusLabel = QLabel("Patient Status:")
-            breathLabel = QLabel("Breath Rate:")
-            heartLabel = QLabel("Heart Rate:")
-            rangeBinLabel = QLabel("Range Bin:")
-
-            # Set up patient vitals plot
-            patientDict["plot"] = pg.PlotWidget()
-            patientDict["plot"].setBackground("w")
-            patientDict["plot"].showGrid(x=True, y=True)
-            patientDict["plot"].invertX(True)
-            patientDict["plot"].setXRange(0, NUM_VITALS_FRAMES_IN_PLOT, padding=0.01)
-            patientDict["plot"].setYRange(-1, 1, padding=0.1)
-            patientDict["plot"].setMouseEnabled(False, False)
-            patientDict["heartGraph"] = pg.PlotCurveItem(
-                pen=pg.mkPen(width=3, color="r")
-            )
-            patientDict["breathGraph"] = pg.PlotCurveItem(
-                pen=pg.mkPen(width=3, color="b")
-            )
-            patientDict["plot"].addItem(patientDict["heartGraph"])
-            patientDict["plot"].addItem(patientDict["breathGraph"])
-
-            # Set up all other patient data fields
-            patientDict["breathRate"] = QLabel("Undefined")
-            patientDict["heartRate"] = QLabel("Undefined")
-            patientDict["status"] = QLabel("Undefined")
-            patientDict["rangeBin"] = QLabel("Undefined")
-            patientDict["name"] = patientName
-
-            # Format text to make it attractive
-            labelFont = QFont("Arial", 16)
-            labelFont.setBold(True)
-            dataFont = QFont("Arial", 12)
-            heartLabel.setFont(labelFont)
-            breathLabel.setFont(labelFont)
-            statusLabel.setFont(labelFont)
-            rangeBinLabel.setFont(labelFont)
-            patientDict["breathRate"].setStyleSheet("color: blue")
-            patientDict["heartRate"].setStyleSheet("color: red")
-            patientDict["status"].setFont(dataFont)
-            patientDict["breathRate"].setFont(dataFont)
-            patientDict["heartRate"].setFont(dataFont)
-            patientDict["rangeBin"].setFont(dataFont)
-
-            # Put the widgets into the layout
-            patientPaneLayout.addWidget(patientDict["plot"], 2, 0, 1, 4)
-            patientPaneLayout.addWidget(statusLabel, 0, 0, alignment=Qt.AlignHCenter)
-            patientPaneLayout.addWidget(
-                patientDict["status"], 1, 0, alignment=Qt.AlignHCenter
-            )
-            patientPaneLayout.addWidget(breathLabel, 0, 1, alignment=Qt.AlignHCenter)
-            patientPaneLayout.addWidget(
-                patientDict["breathRate"], 1, 1, alignment=Qt.AlignHCenter
-            )
-            patientPaneLayout.addWidget(heartLabel, 0, 2, alignment=Qt.AlignHCenter)
-            patientPaneLayout.addWidget(
-                patientDict["heartRate"], 1, 2, alignment=Qt.AlignHCenter
-            )
-            patientPaneLayout.addWidget(rangeBinLabel, 0, 3, alignment=Qt.AlignHCenter)
-            patientPaneLayout.addWidget(
-                patientDict["rangeBin"], 1, 3, alignment=Qt.AlignHCenter
-            )
-
-            patientPane.setLayout(patientPaneLayout)
-            patientDict["pane"] = patientPane
-
-            # Make patient vitals data accessable by other functions
-            self.vitals.append(patientDict)
-
-            if i != 0:
-                patientPane.setVisible(False)
-
-            # Add this patient to the overall vitals pane
-            vitalsPaneLayout.addWidget(patientPane, i, 0)
-
-        self.vitalsPane.setLayout(vitalsPaneLayout)
-
     def initColorGradient(self):
         self.colorGradient = pg.GradientWidget(orientation="right")
         self.colorGradient.restoreState(self.gradientMode)
@@ -1461,414 +1273,6 @@ class Window(QDialog):
         self.classifierStr = []
         self.ellipsoids = []
 
-    def initGesturePhysicalSetupPane(self):
-        self.gestureSetupBox = QGroupBox("Physical Setup")
-
-        self.gestureSetupGrid = QGridLayout()
-        self.gestureSetupImg = QPixmap("images/IWRL6432_gesture_setup2.jpg")
-        self.gestureImgLabel = QLabel()
-        self.gestureImgLabel.setPixmap(self.gestureSetupImg)
-        self.gestureSetupGrid.addWidget(self.gestureImgLabel, 1, 1)
-
-        instructionsLabel = QLabel()
-        instructionsLabel.setText("Stand 2m away, directly in front of the radar.")
-        self.gestureSetupGrid.addWidget(instructionsLabel, 2, 1)
-        self.gestureSetupBox.setLayout(self.gestureSetupGrid)
-
-        self.gridlay.addWidget(self.gestureSetupBox, 3, 0, 1, 1)
-
-    # def initGestureTab(self):
-    #     if self.configType.currentText() == DEMO_NAME_x432_GESTURE:
-    #         self.initGesturePhysicalSetupPane()
-
-    #     self.gestureTab = QWidget()
-    #     vboxGesture = QVBoxLayout()
-
-    #     hboxOutput = QHBoxLayout()
-
-    #     vBoxStatus = QVBoxLayout()
-
-    #     vboxDetectedGesture = QVBoxLayout()
-    #     self.gestureOutput = QLabel("Undefined", self)
-    #     self.gestureOutput.setAlignment(Qt.AlignCenter)
-    #     self.gestureOutput.setStyleSheet(
-    #         "background-color: rgb(70, 72, 79); color: white; font-size: 60px; font-weight: bold"
-    #     )
-    #     font = QFont()
-    #     font.setPointSize(int(self.width() / 20))
-    #     self.gestureOutput.setFont(font)
-    #     vboxDetectedGesture.addWidget(self.gestureOutput, 1)
-    #     vBoxStatus.addLayout(vboxDetectedGesture)
-
-    #     # TODO: Add when feature is supported in demo code
-    #     # vboxMode = QVBoxLayout()
-    #     # self.gestureMode = QLabel("Undefined")
-    #     # self.gestureMode.setAlignment(Qt.AlignCenter)
-    #     # self.gestureMode.setStyleSheet('background-color: green; color: white; font-size: 60px; font-weight:bold')
-    #     # vboxMode.addWidget(self.gestureMode,2)
-    #     # vBoxStatus.addLayout(vboxMode, 50)
-    #     hboxOutput.addLayout(vBoxStatus, 35)
-    #     vboxGesture.addLayout(hboxOutput, 35)
-
-    #     if self.configType.currentText() == DEMO_NAME_x432_GESTURE:
-    #         vBoxFeatures = QVBoxLayout()
-    #         pen = pg.mkPen(color="b", width=2, style=Qt.SolidLine)
-    #         self.gesture_featurePlots["dopplerAvgPlot"] = pg.PlotWidget()
-    #         self.gesture_featurePlots["dopplerAvgPlot"].setBackground((70, 72, 79))
-    #         self.gesture_featurePlots["dopplerAvgPlot"].showGrid(x=True, y=True)
-    #         self.gesture_featurePlots["dopplerAvgPlot"].setYRange(-15, 15)
-    #         self.gesture_featurePlots["dopplerAvgPlot"].setXRange(1, 30)
-    #         self.gesture_featurePlots["dopplerAvgPlot"].setTitle("Doppler Avg")
-    #         self.gesture_featurePlots["dopplerAvgPlot"].plot(
-    #             self.gesture_featureVals["dopplerAvgVals"], pen=pen
-    #         )
-    #         vBoxFeatures.addWidget(self.gesture_featurePlots["dopplerAvgPlot"])
-
-    #         self.gesture_featurePlots["rangeAvgPlot"] = pg.PlotWidget()
-    #         self.gesture_featurePlots["rangeAvgPlot"].setBackground((70, 72, 79))
-    #         self.gesture_featurePlots["rangeAvgPlot"].showGrid(x=True, y=True)
-    #         self.gesture_featurePlots["rangeAvgPlot"].setYRange(25, 36)
-    #         self.gesture_featurePlots["rangeAvgPlot"].setXRange(1, 30)
-    #         self.gesture_featurePlots["rangeAvgPlot"].setTitle("Range Avg")
-    #         self.gesture_featurePlots["rangeAvgPlot"].plot(
-    #             self.gesture_featureVals["rangeAvgVals"], pen=pen
-    #         )
-    #         vBoxFeatures.addWidget(self.gesture_featurePlots["rangeAvgPlot"])
-
-    #         self.gesture_featurePlots["numPointsPlot"] = pg.PlotWidget()
-    #         self.gesture_featurePlots["numPointsPlot"].setBackground((70, 72, 79))
-    #         self.gesture_featurePlots["numPointsPlot"].showGrid(x=True, y=True)
-    #         self.gesture_featurePlots["numPointsPlot"].setYRange(0, 200)
-    #         self.gesture_featurePlots["numPointsPlot"].setXRange(1, 30)
-    #         self.gesture_featurePlots["numPointsPlot"].setTitle(
-    #             "Num Points > threshold"
-    #         )
-    #         self.gesture_featurePlots["numPointsPlot"].plot(
-    #             self.gesture_featureVals["numPointsVals"], pen=pen
-    #         )
-    #         vBoxFeatures.addWidget(self.gesture_featurePlots["numPointsPlot"])
-    #         vboxGesture.addLayout(vBoxFeatures, 65)
-
-    #     self.gestureFontSize = "60px"
-
-    #     self.gestureTimer = QTimer()
-    #     self.gestureTimer.setInterval(1000)
-    #     self.gestureTimer.timeout.connect(self.resetGestureDisplay)
-
-    #     self.gestureTab.setLayout(vboxGesture)
-
-    def resetGestureDisplay(self):
-        # TODO: Add when feature is supported in demo code
-        # # presence mode
-        # if(self.currentGestureMode == GESTURE_PRESENCE_MODE_x432):
-        #     self.gestureOutput.setStyleSheet(f'background-color: black; color: white; font-size: {self.gestureFontSize}; font-weight: bold')
-        #     self.gestureOutput.setText('Waiting for Presence...')
-        # # gesture mode
-        # elif(self.currentGestureMode == GESTURE_GESTURE_MODE_x432):
-        #     self.gestureOutput.setStyleSheet(f'background-color: red; color: white; font-size: {self.gestureFontSize}; font-weight: bold')
-        #     self.gestureOutput.setText(self.gestureList[0])
-        self.gestureOutput.setStyleSheet(
-            f"background-color: rgb(70, 72, 79); color: white; font-size: {self.gestureFontSize}; font-weight: bold"
-        )
-        self.gestureOutput.setText(self.gestureList[0])
-        self.gestureTimer.stop()
-
-    def gestureHandler(self, gesture):
-        self.updateGestureDisplay(self.gestureList[gesture])
-        # TODO: Add additional functionality based on detected gesture
-
-    # TODO: Add when feature is supported in demo code
-    # def gesturePresenceHandler(self, gesturePresence):
-    #     #if gesture/presence mode switched,
-    #     if(self.currentGestureMode != gesturePresence):
-    #         if(gesturePresence==GESTURE_PRESENCE_MODE_x432):
-    #             self.gestureMode.setStyleSheet('background-color: green; color: white; font-size: 60px; font-weight:bold')
-    #             self.gestureMode.setText("Low Power Mode")
-    #         elif(gesturePresence==GESTURE_GESTURE_MODE_x432):
-    #             self.gestureMode.setStyleSheet('background-color: orange; color: white; font-size: 60px; font-weight:bold')
-    #             self.gestureMode.setText("Gesture Mode")
-    #         self.currentGestureMode = gesturePresence
-    #         self.resetGestureDisplay()
-
-    def updateGestureFeatures(self, features):
-        pen = pg.mkPen(color="b", width=2, style=Qt.SolidLine)
-        # Update doppler avg feature plot
-        dopplerAvgData = collections.deque(self.gesture_featureVals["dopplerAvgVals"])
-        dopplerAvgData.appendleft(features[1])  # doppler avg feature is at index 1
-        if len(dopplerAvgData) > 40:
-            dopplerAvgData.pop()
-        self.gesture_featureVals["dopplerAvgVals"] = dopplerAvgData
-        self.gesture_featurePlots["dopplerAvgPlot"].clear()
-        self.gesture_featurePlots["dopplerAvgPlot"].plot(
-            self.gesture_featureVals["dopplerAvgVals"], pen=pen
-        )
-
-        # Update range avg feature plot
-        rangeAvgData = collections.deque(self.gesture_featureVals["rangeAvgVals"])
-        rangeAvgData.appendleft(features[0])  # range avg feature is at index 0
-        if len(rangeAvgData) > 40:
-            rangeAvgData.pop()
-        self.gesture_featureVals["rangeAvgVals"] = rangeAvgData
-        self.gesture_featurePlots["rangeAvgPlot"].clear()
-        self.gesture_featurePlots["rangeAvgPlot"].plot(
-            self.gesture_featureVals["rangeAvgVals"], pen=pen
-        )
-
-        # Update num points feature plot
-        numPointsData = collections.deque(self.gesture_featureVals["numPointsVals"])
-        numPointsData.appendleft(features[4])  # num points feature is at index 4
-        if len(numPointsData) > 40:
-            numPointsData.pop()
-        self.gesture_featureVals["numPointsVals"] = numPointsData
-        self.gesture_featurePlots["numPointsPlot"].clear()
-        self.gesture_featurePlots["numPointsPlot"].plot(
-            self.gesture_featureVals["numPointsVals"], pen=pen
-        )
-
-    def updateLevelSensingPeaks(self):
-        comment1 = "Object 1 in meters : "
-        label_text1 = f"{self.Peak1}"
-        self.PeakListOutput1.setText(label_text1)
-
-        comment2 = "Object 2 in meters : "
-        label_text2 = f"{self.Peak2}"
-        self.PeakListOutput2.setText(label_text2)
-
-        comment3 = "Object 3 in meters : "
-        label_text3 = f"{self.Peak3}"
-        self.PeakListOutput3.setText(label_text3)
-
-        comment1 = "Object 1 power in dB : "
-        label_text1 = f"{self.Peak1Magnitude}"
-        self.PeakMagnitudeOutput1.setText(label_text1)
-
-        comment2 = "Object 2 power in dB : "
-        label_text2 = f"{self.Peak2Magnitude}"
-        self.PeakMagnitudeOutput2.setText(label_text2)
-
-        comment3 = "Object 3 power in dB : "
-        label_text3 = f"{self.Peak3Magnitude}"
-        self.PeakMagnitudeOutput3.setText(label_text3)
-
-    def updateLevelSensingPower(self, powerData):
-        llPower = (
-            powerData["power1v2"]
-            + powerData["power1v2RF"]
-            + powerData["power1v8"]
-            + powerData["power3v3"]
-        ) * 0.1
-        if powerData["power1v2"] == 65535:
-            llPower = 0
-        else:
-            llPower = round(llPower, 2)
-
-        power_comment = "Power in mW: "
-        power_label = f"{power_comment}{llPower}"
-        self.PowerOutput.setText(power_label)
-
-    def updatePowerNumbers(self, powerData):
-        if powerData["power1v2"] == 65535:
-            self.avgPower.setText("Average Power: N/A")
-        else:
-            powerStr = str(
-                (
-                    powerData["power1v2"]
-                    + powerData["power1v2RF"]
-                    + powerData["power1v8"]
-                    + powerData["power3v3"]
-                )
-                * 0.1
-            )
-            self.avgPower.setText("Average Power: " + powerStr[:5] + " mW")
-
-    # Perform post processing on the raw probabilities output by the neural network.
-    # Uses a probabilities threshold and count threshold to deterrmine if a gesture has occured.
-    def gesturePostProc(self, ann_probs):
-        numOutputProbs = len(self.gestureList)
-
-        i = 0
-        j = 0
-        confSum = 0
-
-        # Shift the existing values
-        for i in range(GESTURE_FEATURE_LENGTH * numOutputProbs - numOutputProbs):
-            self.sumProbs[i] = self.sumProbs[i + numOutputProbs]
-
-        #  Add the values for the current frame
-        for i in range(numOutputProbs):
-            if ann_probs[i] >= self.probabilityThresholds[i]:
-                self.sumProbs[
-                    GESTURE_FEATURE_LENGTH * numOutputProbs - numOutputProbs + i
-                ] = 1
-            else:
-                self.sumProbs[
-                    GESTURE_FEATURE_LENGTH * numOutputProbs - numOutputProbs + i
-                ] = 0
-
-        self.currFramegesture = 0
-
-        for i in range(numOutputProbs):
-            confSum = 0
-
-            for j in range(GESTURE_FEATURE_LENGTH):
-                confSum += self.sumProbs[j * numOutputProbs + i]
-
-            # Sum must be larger than count threshold to be considered a gesture
-            if confSum > self.countThresholds[i]:
-                self.currFramegesture = i
-
-        if self.prevFramegesture != self.currFramegesture:
-            if self.currFramegesture != GESTURE_NO_GESTURE_6843:
-                self.gestureHandler(self.currFramegesture)
-        else:
-            if self.frameNum % self.contGestureFramecount == 0:
-                if (
-                    self.currFramegesture == GESTURE_CW_TWIRL_6843
-                    or self.currFramegesture == GESTURE_CCW_TWIRL_6843
-                    or self.currFramegesture == GESTURE_SHINE_6843
-                ):
-                    self.gestureHandler(self.currFramegesture)
-
-        self.prevFramegesture = self.currFramegesture
-
-    def updateGestureDisplay(self, text):
-        self.gestureOutput.setStyleSheet(
-            f"background-color: blue; color: white; font-size: {self.gestureFontSize}; font-weight: bold"
-        )
-        self.gestureOutput.setText(text)
-        self.gestureTimer.start()
-
-    def initSurfacePhysicalSetupPane(self):
-        self.surfaceSetupBox = QGroupBox("Physical Setup")
-
-        self.gestureSetupGrid = QGridLayout()
-        self.gestureSetupImg = QPixmap("images/surface_setup.png")
-        self.gestureImgLabel = QLabel()
-        self.gestureImgLabel.setPixmap(self.gestureSetupImg)
-        self.gestureSetupGrid.addWidget(self.gestureImgLabel, 1, 1)
-
-        self.surfaceSetupBox.setLayout(self.gestureSetupGrid)
-
-        self.gridlay.addWidget(self.surfaceSetupBox, 3, 0, 1, 1)
-
-    def initSurfaceClassificationTab(self):
-
-        self.initSurfacePhysicalSetupPane()
-
-        self.surfaceTab = QWidget()
-        vboxSurface = QVBoxLayout()
-
-        vboxOutput = QGridLayout()
-        self.surfaceOutput = QLabel(
-            "<b>Grass Classification</b><br>" + str(self.surfaceList[0]), self
-        )
-        self.surfaceOutput.setAlignment(Qt.AlignCenter)
-        self.surfaceOutput.setStyleSheet(
-            "background-color: #46484f; color: white; font-size: 40px; font-weight: light"
-        )
-
-        self.surfaceOutputRaw = QLabel("<b>Grass Probability</b><br>0.0%", self)
-        self.surfaceOutputRaw.setAlignment(Qt.AlignCenter)
-        self.surfaceOutputRaw.setStyleSheet(
-            "background-color: #46484f; color: white; font-size: 40px; font-weight: light"
-        )
-
-        surfaceDescStr = """
-        <p style="font-size: 30px"><b>Sensor Setup:</b></p><p style="font-size: 20px">18cm off the ground with 27 degree tilt off the vertical</p>
-        <p style="font-size: 30px"><b>Model:       </b></p><p style="font-size: 20px">Sequential model trained on grass and large stone pavers</p>
-        <p style="font-size: 30px"><b>More info:   </b></p><p style="font-size: 20px">See User Guide in the Radar Toolbox on dev.ti.com       </p>
-        """
-        self.surfaceDesc = QLabel(surfaceDescStr, self)
-        self.surfaceDesc.setOpenExternalLinks(True)
-        self.surfaceDesc.setAlignment(Qt.AlignLeft)
-        self.surfaceDesc.setStyleSheet(
-            "background-color: white; color: black; font-size: 30px; font-weight: light"
-        )
-
-        font = QFont()
-        font.setPointSize(int(self.width() / 20))
-        self.surfaceOutput.setFont(font)
-        self.surfaceOutputRaw.setFont(font)
-        self.surfaceDesc.setFont(font)
-
-        self.surfaceOutputRange = pg.PlotWidget()
-        self.surfaceOutputRange.setBackground((70, 72, 79))
-        self.surfaceOutputRange.showGrid(x=True, y=True, alpha=1)
-        self.surfaceOutputRange.getAxis("bottom").setPen("w")
-        self.surfaceOutputRange.getAxis("left").setPen("w")
-        self.surfaceOutputRange.getAxis("right").setStyle(showValues=False)
-        self.surfaceOutputRange.hideAxis("top")
-        self.surfaceOutputRange.hideAxis("right")
-        self.surfaceOutputRange.setXRange(0, 100, padding=0.00)
-        self.surfaceOutputRange.setYRange(0, 1, padding=0.00)
-        self.surfaceOutputRange.setMouseEnabled(False, False)
-        self.surfaceOutputRangeData = pg.PlotCurveItem(pen=pg.mkPen(width=3, color="b"))
-        self.surfaceOutputRange.addItem(self.surfaceOutputRangeData)
-
-        self.surfaceOutputRange.getPlotItem().setLabel(
-            "bottom",
-            '<p style="font-size: 20px;color: white">Relative Frame # (0 is most recent)</p>',
-        )
-        self.surfaceOutputRange.getPlotItem().setLabel(
-            "left",
-            '<p style="font-size: 20px;color: white">Grass Probability Value</p>',
-        )
-        self.surfaceOutputRange.getPlotItem().setLabel("right", " ")
-        self.surfaceOutputRange.getPlotItem().setTitle(
-            '<p style="font-size: 30px;color: white">Probability Value over Time</p>'
-        )
-
-        self.surfaceOutputRange.getAxis("top").setStyle(tickTextOffset=150)
-
-        vboxOutput.addWidget(self.surfaceOutput, 0, 0, 1, 1)
-        vboxOutput.addWidget(self.surfaceOutputRaw, 1, 0, 1, 1)
-        vboxOutput.addWidget(self.surfaceDesc, 0, 1, 2, 1)
-        vboxOutput.addWidget(self.surfaceOutputRange, 2, 0, 1, 2)
-        # vboxOutput.setVerticalSpacing(0)
-        vboxSurface.addLayout(vboxOutput)
-
-        self.surfaceFontSize = "80px"
-
-        self.surfaceTab.setLayout(vboxSurface)
-
-    def surfaceHandler(self, classification):
-        self.surfaceLatestResults.appendleft(classification)
-        # Simply take a weighted rolling average of the last 5 frames of data, customers should create a more robust algorithm
-        currentClassification = np.average(
-            list(self.surfaceLatestResults)[0:5], weights=[5, 4, 3, 2, 1]
-        )
-        self.surfaceOutputRangeData.setData(
-            np.arange(0, 100), list(self.surfaceLatestResults)
-        )
-
-        # grass > 0.5, not grass <= 0.5
-        if currentClassification > 0.5:
-            self.surfaceOutput.setText(
-                "<b>Grass Classification</b><br>" + str(self.surfaceList[1])
-            )
-            self.surfaceOutput.setStyleSheet(
-                "background-color: green; color: white; font-size: 40px; font-weight: light"
-            )
-            self.surfaceOutputRaw.setStyleSheet(
-                "background-color: green; color: white; font-size: 40px; font-weight: light"
-            )
-        else:
-            self.surfaceOutput.setText(
-                "<b>Grass Classification</b><br>" + str(self.surfaceList[0])
-            )
-            self.surfaceOutput.setStyleSheet(
-                "background-color: #46484f; color: white; font-size: 40px; font-weight: light"
-            )
-            self.surfaceOutputRaw.setStyleSheet(
-                "background-color: #46484f; color: white; font-size: 40px; font-weight: light"
-            )
-
-        self.surfaceOutputRaw.setText(
-            "<b>Grass Classification Value</b><br>"
-            + "{:8.5f}".format(classification * 100)
-            + "%"
-        )
-
     def init1dGraph(self):
         self.rangePlot = pg.PlotWidget()
         self.rangePlot.setBackground("w")
@@ -1884,238 +1288,6 @@ class Window(QDialog):
         self.rangePlot.getPlotItem().setLabel("bottom", "Range (meters)")
         self.rangePlot.getPlotItem().setLabel("left", "Relative Power (dB)")
 
-    def initLevelSensingGraph(self):
-        self.levelsensingTab = QWidget()
-
-        vboxLevelSense = QVBoxLayout()
-        vboxTop = QHBoxLayout()
-        vboxBottom = QHBoxLayout()
-
-        vboxRangeProfile = QVBoxLayout()
-        self.vboxPeakList = QVBoxLayout()
-        self.vboxPeakMagnitude = QVBoxLayout()
-        self.vboxObjectNo = QVBoxLayout()
-
-        comment1 = "Peak No"
-        label_text1 = f"{comment1}"
-        self.ObjectNo = QLabel(label_text1, self)
-        self.ObjectNo.setAlignment(Qt.AlignCenter)
-        self.ObjectNo.setStyleSheet(
-            "background-color: teal; color: white; font-size: 30px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.ObjectNo.setFont(font)
-        self.vboxObjectNo.addWidget(self.ObjectNo, 1)
-
-        comment1 = "1"
-        label_text1 = f"{comment1}"
-        self.ObjectNo1 = QLabel(label_text1, self)
-        self.ObjectNo1.setAlignment(Qt.AlignCenter)
-        self.ObjectNo1.setStyleSheet(
-            "background-color: teal; color: white; font-size: 30px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.ObjectNo1.setFont(font)
-        self.vboxObjectNo.addWidget(self.ObjectNo1, 1)
-
-        comment2 = "2"
-        label_text2 = f"{comment2}"
-        self.ObjectNo2 = QLabel(label_text2, self)
-        self.ObjectNo2.setAlignment(Qt.AlignCenter)
-        self.ObjectNo2.setStyleSheet(
-            "background-color: teal; color: white; font-size: 30px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.ObjectNo2.setFont(font)
-        self.vboxObjectNo.addWidget(self.ObjectNo2, 1)
-
-        comment3 = "3"
-        label_text3 = f"{comment3}"
-        self.ObjectNo3 = QLabel(label_text3, self)
-        self.ObjectNo3.setAlignment(Qt.AlignCenter)
-        self.ObjectNo3.setStyleSheet(
-            "background-color: teal; color: white; font-size: 30px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.ObjectNo3.setFont(font)
-        self.vboxObjectNo.addWidget(self.ObjectNo3, 1)
-
-        comment1 = "Distance in meters"
-        label_text1 = f"{comment1}"
-        self.PeakListOutput = QLabel(label_text1, self)
-        self.PeakListOutput.setAlignment(Qt.AlignCenter)
-        self.PeakListOutput.setStyleSheet(
-            "background-color: teal; color: white; font-size: 30px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.PeakListOutput.setFont(font)
-        self.vboxPeakList.addWidget(self.PeakListOutput, 1)
-
-        comment1 = "Object 1 in meters : "
-        label_text1 = f"{self.Peak1}"
-        self.PeakListOutput1 = QLabel(label_text1, self)
-        self.PeakListOutput1.setAlignment(Qt.AlignCenter)
-        self.PeakListOutput1.setStyleSheet(
-            "background-color: teal; color: white; font-size: 30px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.PeakListOutput1.setFont(font)
-        self.vboxPeakList.addWidget(self.PeakListOutput1, 1)
-
-        comment2 = "Object 2 in meters : "
-        label_text2 = f"{self.Peak2}"
-        self.PeakListOutput2 = QLabel(label_text2, self)
-        self.PeakListOutput2.setAlignment(Qt.AlignCenter)
-        self.PeakListOutput2.setStyleSheet(
-            "background-color: teal; color: white; font-size: 30px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.PeakListOutput2.setFont(font)
-        self.vboxPeakList.addWidget(self.PeakListOutput2, 1)
-
-        comment3 = "Object 3 in meters : "
-        label_text3 = f"{self.Peak3}"
-        self.PeakListOutput3 = QLabel(label_text3, self)
-        self.PeakListOutput3.setAlignment(Qt.AlignCenter)
-        self.PeakListOutput3.setStyleSheet(
-            "background-color: teal; color: white; font-size: 30px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.PeakListOutput3.setFont(font)
-        self.vboxPeakList.addWidget(self.PeakListOutput3, 1)
-
-        comment1 = "Power in dB"
-        label_text = f"{comment1}"
-        self.PeakMagnitudeOutput = QLabel(label_text, self)
-        self.PeakMagnitudeOutput.setAlignment(Qt.AlignCenter)
-        self.PeakMagnitudeOutput.setStyleSheet(
-            "background-color: teal; color: white; font-size: 30px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.PeakMagnitudeOutput.setFont(font)
-        self.vboxPeakMagnitude.addWidget(self.PeakMagnitudeOutput, 1)
-
-        comment1 = "Object 1 power in dB: "
-        label_text1 = f"{self.Peak1Magnitude}"
-        self.PeakMagnitudeOutput1 = QLabel(label_text1, self)
-        self.PeakMagnitudeOutput1.setAlignment(Qt.AlignCenter)
-        self.PeakMagnitudeOutput1.setStyleSheet(
-            "background-color: teal; color: white; font-size: 30px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.PeakMagnitudeOutput1.setFont(font)
-        self.vboxPeakMagnitude.addWidget(self.PeakMagnitudeOutput1, 1)
-
-        comment2 = "Object 2 power in dB: "
-        label_text2 = f"{self.Peak2Magnitude}"
-        self.PeakMagnitudeOutput2 = QLabel(label_text2, self)
-        self.PeakMagnitudeOutput2.setAlignment(Qt.AlignCenter)
-        self.PeakMagnitudeOutput2.setStyleSheet(
-            "background-color: teal; color: white; font-size: 30px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.PeakMagnitudeOutput2.setFont(font)
-        self.vboxPeakMagnitude.addWidget(self.PeakMagnitudeOutput2, 1)
-
-        comment3 = "Object 3 power in dB: "
-        label_text3 = f"{self.Peak3Magnitude}"
-        self.PeakMagnitudeOutput3 = QLabel(label_text3, self)
-        self.PeakMagnitudeOutput3.setAlignment(Qt.AlignCenter)
-        self.PeakMagnitudeOutput3.setStyleSheet(
-            "background-color: teal; color: white; font-size: 30px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.PeakMagnitudeOutput3.setFont(font)
-        self.vboxPeakMagnitude.addWidget(self.PeakMagnitudeOutput3, 1)
-
-        self.init1dGraph()
-
-        self.HighlightPlotPeak1 = pg.ScatterPlotItem(
-            pen=None, size=10, brush=pg.mkBrush("b")
-        )
-        self.HighlightPlotPeak2 = pg.ScatterPlotItem(
-            pen=None, size=10, brush=pg.mkBrush("g")
-        )
-        self.HighlightPlotPeak3 = pg.ScatterPlotItem(
-            pen=None, size=10, brush=pg.mkBrush("m")
-        )
-        self.rangePlot.addItem(self.HighlightPlotPeak1)
-        self.rangePlot.addItem(self.HighlightPlotPeak2)
-        self.rangePlot.addItem(self.HighlightPlotPeak3)
-
-        self.peakLabel1 = pg.TextItem(f"1", anchor=(0.05, 1), color="b")
-        self.peakLabel2 = pg.TextItem(f"2", anchor=(0.05, 1), color="g")
-        self.peakLabel3 = pg.TextItem(f"3", anchor=(0.05, 1), color="m")
-        self.rangePlot.addItem(self.peakLabel1)
-        self.rangePlot.addItem(self.peakLabel2)
-        self.rangePlot.addItem(self.peakLabel3)
-
-        vboxRangeProfile.addWidget(self.rangePlot)
-
-        vboxPower = QVBoxLayout()
-        llPower = 0
-        power_comment = "Power in mW: "
-        power_label = f"{power_comment}{llPower}"
-        self.PowerOutput = QLabel(power_label, self)
-        self.PowerOutput.setAlignment(Qt.AlignCenter)
-        self.PowerOutput.setStyleSheet(
-            "background-color: teal; color: white; font-size: 25px; font-weight: bold"
-        )
-        font = QFont()
-        font.setPointSize(int(self.width() / 15))
-        self.PowerOutput.setFont(font)
-        vboxPower.addWidget(self.PowerOutput, 1)
-
-        vboxNote = QVBoxLayout()
-        noteLable = QLabel(
-            "Note : Peaks are ordered based on their relative power. Peak with the highest relative power is designated as Peak 1"
-        )
-        font = QFont("Arial", 8)
-        noteLable.setFont(font)
-        vboxNote.addWidget(noteLable)
-
-        vboxGraphics = QVBoxLayout()
-        peak_barGraph = pg.BarGraphItem(
-            x=[1, 2, 3], height=[0, 0, 0], width=0.1, brush="g"
-        )
-
-        self.peakScatterPlot = pg.PlotWidget()
-        self.peakScatterPlot.setBackground("w")
-        self.peakScatterPlot.showGrid(x=True, y=True)
-        self.peakScatterPlot.setXRange(0, 1000)
-        self.peakScatterPlot.setYRange(0, 20, padding=0.01)
-        self.peakScatterPlot.setMouseEnabled(False, False)
-        self.peakScatterPlot.getPlotItem().setLabel("bottom", "Frame Number")
-        self.peakScatterPlot.getPlotItem().setLabel("left", "Distance in Meters")
-        self.peakScatterPlot.getPlotItem().setLabel("top", "Peak Movement over time")
-
-        vboxGraphics.addWidget(self.peakScatterPlot)
-
-        # vboxTop.addLayout(vboxGraphics)
-        vboxTop.addLayout(vboxRangeProfile)
-
-        vboxBottom.addLayout(self.vboxObjectNo)
-        vboxBottom.addLayout(self.vboxPeakList)
-        vboxBottom.addLayout(self.vboxPeakMagnitude)
-
-        vboxLevelSense.addLayout(vboxTop)
-        vboxLevelSense.addLayout(vboxBottom)
-        vboxLevelSense.addLayout(vboxPower)
-        vboxLevelSense.addLayout(vboxNote)
-        self.levelsensingTab.setLayout(vboxLevelSense)
-
     def updateGraph(self, outputDict):
         pointCloud = None
         numPoints = 0
@@ -2126,14 +1298,14 @@ class Window(QDialog):
         self.frameNum = 0
         error = 0
         occupancyStates = None
-        vitalsDict = None
-        rangeProfile = None
+        # vitalsDict = None
+        # rangeProfile = None
         self.useFilter = 0
         heights = None
         enhancedPresenceDet = None
         gestureNeuralNetProb = None
         gesture = None
-        gesturePresence = None
+        # gesturePresence = None
         gestureFeatures = None
         powerData = None
 
@@ -2304,154 +1476,6 @@ class Window(QDialog):
                             "Error : invalid result for Enhanced Presence Detection TLV"
                         )
 
-        # Process gesture info
-        if gestureNeuralNetProb is not None and self.lastFrameProcd != self.frameNum:
-            self.lastFrameProcd = self.frameNum
-            gesture = self.gesturePostProc(gestureNeuralNetProb)
-        elif gesture is not None and gesture is not GESTURE_NO_GESTURE_6432:
-            self.gestureHandler(gesture)
-
-        # Process gesture/presence mode info
-        # if(gesturePresence is not None):
-        #     self.gesturePresenceHandler(gesturePresence)
-
-        # Process gesture features
-        if gestureFeatures is not None:
-            self.updateGestureFeatures(gestureFeatures)
-
-        if pointCloud is not None:
-            for i in range(numPoints):
-                if i == 0:
-                    self.Peak1 = round(pointCloud[i, 1], 3)
-                    self.Peak1Magnitude = round(
-                        np.log10(
-                            round((pointCloud[i, 4] * 64 + pointCloud[i, 5]), 4) + 1
-                        )
-                        * 20,
-                        1,
-                    )
-                    # print ( f'Peak 1 Magnitude (${round(pointCloud[i, 4], 4)})')
-                elif i == 1:
-                    self.Peak2 = round(pointCloud[i, 1], 3)
-                    self.Peak2Magnitude = round(
-                        np.log10(
-                            round((pointCloud[i, 4] * 64 + pointCloud[i, 5]), 4) + 1
-                        )
-                        * 20,
-                        1,
-                    )
-                    # print ( f'Peak 2 Magnitude (${round(pointCloud[i, 4], 4)})')
-                elif i == 2:
-                    self.Peak3 = round(pointCloud[i, 1], 3)
-                    self.Peak3Magnitude = round(
-                        np.log10(
-                            round((pointCloud[i, 4] * 64 + pointCloud[i, 5]), 4) + 1
-                        )
-                        * 20,
-                        1,
-                    )
-                    # print ( f'Peak 3 Magnitude (${round(pointCloud[i, 4], 4)})')
-
-        if powerData is not None:
-            self.updatePowerNumbers(powerData)
-
-        # Process surface classification info
-        if surfaceClassificationResult is not None:
-            self.surfaceHandler(surfaceClassificationResult)
-
-        # Vital Signs info
-        if vitalsDict is not None:
-            # Update info for each patient
-            patientId = vitalsDict["id"]
-            # Check that patient id is valid
-            if patientId < self.profile["maxTracks"]:
-                self.vitalsPatientData[patientId]["rangeBin"] = vitalsDict["rangeBin"]
-                self.vitalsPatientData[patientId]["breathDeviation"] = vitalsDict[
-                    "breathDeviation"
-                ]
-                self.vitalsPatientData[patientId]["breathRate"] = vitalsDict[
-                    "breathRate"
-                ]
-
-                # Take the median of the last n heartrates to prevent it from being sporadic
-                self.vitalsPatientData[patientId]["heartRate"].append(
-                    vitalsDict["heartRate"]
-                )
-                while (
-                    len(self.vitalsPatientData[patientId]["heartRate"])
-                    > NUM_HEART_RATES_FOR_MEDIAN
-                ):
-                    self.vitalsPatientData[patientId]["heartRate"].pop(0)
-                medianHeartRate = statistics.median(
-                    self.vitalsPatientData[patientId]["heartRate"]
-                )
-
-                # Check if the patient is holding their breath, and if there is a patient  detected at all
-                # TODO ensure vitals output is 0
-                if float(vitalsDict["breathDeviation"]) == 0 or numTracks == 0:
-                    patientStatus = "No Patient Detected"
-                    breathRateText = "N/A"
-                    heartRateText = "N/A"
-                    # Workaround to ensure waveform is flat when no track is present
-                    for i in range(NUM_FRAMES_PER_VITALS_PACKET):
-                        vitalsDict["heartWaveform"][i] = 0
-                        vitalsDict["breathWaveform"][i] = 0
-                else:
-                    heartRateText = str(round(medianHeartRate, 1))
-                    # Patient breathing normally
-                    if float(vitalsDict["breathDeviation"]) >= 0.02:
-                        patientStatus = "Presence"
-                        # Round the floats to 1 decimal place and format them for display
-                        breathRateText = str(
-                            round(self.vitalsPatientData[patientId]["breathRate"], 1)
-                        )
-                    # Patient holding breath
-                    else:
-                        patientStatus = "Holding Breath"
-                        breathRateText = "N/A"
-
-                # Add heart rate waveform data for this packet to the graph
-                self.vitalsPatientData[patientId]["heartWaveform"].extend(
-                    vitalsDict["heartWaveform"]
-                )
-                while (
-                    len(self.vitalsPatientData[patientId]["heartWaveform"])
-                    > NUM_VITALS_FRAMES_IN_PLOT
-                ):
-                    self.vitalsPatientData[patientId]["heartWaveform"].pop(0)
-
-                # Add breathing rate waveform data for this packet to the graph
-                self.vitalsPatientData[patientId]["breathWaveform"].extend(
-                    vitalsDict["breathWaveform"]
-                )
-                while (
-                    len(self.vitalsPatientData[patientId]["breathWaveform"])
-                    > NUM_VITALS_FRAMES_IN_PLOT
-                ):
-                    self.vitalsPatientData[patientId]["breathWaveform"].pop(0)
-
-                # Copy waveforms so that we can reverse their oritentation
-                heartWaveform = self.vitalsPatientData[patientId][
-                    "heartWaveform"
-                ].copy()
-                heartWaveform.reverse()
-
-                # Copy waveforms so that we can reverse their oritentation
-                breathWaveform = self.vitalsPatientData[patientId][
-                    "breathWaveform"
-                ].copy()
-                breathWaveform.reverse()
-
-                # Update relevant info in GUI
-                self.vitals[patientId]["heartGraph"].setData(heartWaveform)
-                self.vitals[patientId]["breathGraph"].setData(breathWaveform)
-                self.vitals[patientId]["heartRate"].setText(heartRateText)
-                self.vitals[patientId]["breathRate"].setText(breathRateText)
-                self.vitals[patientId]["status"].setText(patientStatus)
-                self.vitals[patientId]["rangeBin"].setText(
-                    str(self.vitalsPatientData[patientId]["rangeBin"])
-                )
-
         # Reset all heights each loop to delete heights from tracks that disappear.
         for cstr in self.coordStr:
             cstr.setVisible(False)
@@ -2460,108 +1484,24 @@ class Window(QDialog):
         # If fall detection is enabled
 
         # If there are heights to display
-        t1 = threading.Thread(target=visualizePointCloud, args=(heights, tracks, self))
-        t2 = threading.Thread(target=sentToFirebase, args=())
-        t3 = threading.Thread(target=predictModel, args=())
-        t4 = threading.Thread(target=predictFatalFall, args=())
+        t0 = threading.Thread(target=visualizePointCloud, args=(heights, tracks, self))
+        t1 = threading.Thread(target=sentToFirebase, args=())
+        t2 = threading.Thread(target=predictModel, args=())
+        t3 = threading.Thread(target=predictFatalFall, args=())
 
+        t0.start()
         t1.start()
         t2.start()
         t3.start()
-        t4.start()
-        # if self.displayFallDet.checkState() == 2:
-        #     # If there are heights to display
-        #     t1 = threading.Thread(target=visualizePointCloud, args=(heights, tracks, self))
-        #     t2 = threading.Thread(target=sentToFirebase, args=())
-        #     t3 = threading.Thread(target=sentToModel, args=())
-
-        #     t1.start()
-        #     t2.start()
-        #     t3.start()
-
-        # if heights is not None:
-        #     if len(heights) != len(tracks):
-        #         print("WARNING: number of heights does not match number of tracks")
-        #     # Compute the fall detection results for each object
-        #     fallDetectionDisplayResults = self.fallDetection.step(heights, tracks)
-        #     ## Display fall detection results
-
-        #     # For each height heights for current tracks
-        #     sent = []
-        #     for height in heights:
-        #         # Find track with correct TID
-        #         for track in tracks:
-        #             # Found correct track
-        #             if int(track[0]) == int(height[0]):
-        #                 tid = int(height[0])
-        #                 height_str = (
-        #                     "tid : "
-        #                     + str(height[0])
-        #                     + ", height : "
-        #                     + str(round(height[1], 2))
-        #                     + " m"
-        #                 )
-        #                 # ts store timestamp of current time
-        #                 ct = datetime.datetime.now()
-        #                 ts = ct.timestamp()
-        #                 print("/n/ndata :")
-        #                 # print(track[0:10])
-
-        #                 rawData = track[1:10]
-        #                 xPos = track[1]
-        #                 yPos = track[2]
-        #                 zPos = track[3]
-        #                 rawData = np.insert(rawData, 0, ts)
-        #                 # print(rawData)
-        #                 # sent.append(ts)
-        #                 sent.append(rawData)
-        #                 print(sent)
-        #                 # print(tracks)
-        #                 # print(trackIndexs)
-        #                 # print(numPoints)
-        #                 # for i in range(numPoints):
-        #                 #     print(pointCloud[i,0], pointCloud[i,1], pointCloud[i,2], pointCloud[i,3])
-        #                 # If this track was computed to have fallen, display it on the screen
-
-        #                 # # Append the new data to the DataFrame
-        #                 # df_new = pd.DataFrame(sent, columns=columns, copy=False)
-
-        #                 # # Save the updated DataFrame to Excel/
-        #                 # df_new.to_csv('rawData20.csv', mode='a', index=False, header=False)
-
-        #                 if fallDetectionDisplayResults[tid] > 0:
-        #                     height_str = height_str + " FALL DETECTED"
-        #                     fallStatVar = "Status: JATOHHHHHH!"
-        #                     fallCon = True
-        #                     # print("jatuh")
-        #                 else:
-        #                     fallStatVar = "Status: enjoy"
-        #                     fallCon = False
-        #                     # print("tidak jatuh")
-
-        #                 self.fallDisplayStat.setText(fallStatVar)
-        #                 self.coordStr[tid].setText(height_str)
-        #                 self.coordStr[tid].setX(track[1])
-        #                 self.coordStr[tid].setY(track[2])
-        #                 self.coordStr[tid].setZ(track[3])
-        #                 self.coordStr[tid].setVisible(True)
-        #                 break
 
         # Point cloud Persistence
         numPersistentFrames = int(self.persistentFramesInput.currentText())
-        if (
-            self.configType.currentText()
-            == DEMO_NAME_3DPC
-            # or self.configType.currentText() == DEMO_NAME_VITALS
-        ):
+        if self.configType.currentText() == DEMO_NAME_3DPC:
             numPersistentFrames = numPersistentFrames + 1
 
         # Add trackIndexs to the point cloud before adding it to the cumulative cloud
         if trackIndexs is not None:
             # Small Obstacle Detection demo doesnt support track indexes
-            # if self.configType.currentText() == DEMO_NAME_SOD:
-            #     pass
-            # For 3D People Tracking and vitals demos, the tracks and track indexes come one frame after the associated point cloud
             if (
                 self.configType.currentText()
                 == DEMO_NAME_3DPC
@@ -2704,12 +1644,7 @@ class Window(QDialog):
 
         # Since track indexes are delayed a frame on the IWR6843 demo, delay showing the current points by 1 frame
         if (self.parser.parserType == "DoubleCOMPort") and (
-            self.frameNum > 1
-            and (
-                self.configType.currentText()
-                == DEMO_NAME_3DPC
-                # or self.configType.currentText() == DEMO_NAME_VITALS
-            )
+            self.frameNum > 1 and (self.configType.currentText() == DEMO_NAME_3DPC)
         ):
             cumulativeCloud = np.concatenate(self.previousClouds[:-1])
         elif len(self.previousClouds) > 0:
@@ -2929,19 +1864,6 @@ class Window(QDialog):
         self.frameNumDisplay.setText(fnstr)
         # self.plotTimeDisplay.setText(pltstr)
 
-    def resetFallText(self):
-        self.fallAlert.setText("Standing")
-        self.fallPic.setPixmap(self.standingPicture)
-        self.fallResetTimerOn = 0
-
-    def updateFallThresh(self):
-        try:
-            newThresh = float(self.fallThreshInput.text())
-            self.fallThresh = newThresh
-            self.fallThreshMarker.setPos(self.fallThresh)
-        except:
-            print("No numberical threshold")
-
     def connectCom(self):
         self.parser.frameTime = self.frameTime
         print("Parser type: ", self.configType.currentText())
@@ -2960,11 +1882,6 @@ class Window(QDialog):
                 self.deviceType.currentText() in DEVICE_LIST[0:2]
             ):  # If using x843 device
                 self.parser.connectComPorts(uart, data)
-            # else:  # If not x843 device then defer to x432 device
-            #     if self.configType.currentText() == DEMO_NAME_x432_GESTURE:
-            #         self.parser.connectComPort(uart, 1250000)
-            #     else:
-            #         self.parser.connectComPort(uart)
             self.connectStatus.setText("Connected")
         # TODO: create the disconnect button action
         except Exception as e:
@@ -2972,8 +1889,6 @@ class Window(QDialog):
             self.connectStatus.setText("Unable to Connect")
         if self.configType.currentText() == "Replay":
             self.connectStatus.setText("Replay")
-        # if self.configType.currentText() == DEMO_NAME_LRPD:
-        #     self.frameTime = 400
 
     def updateNumTracksBuffer(self):
         # Classifier Data
@@ -3113,24 +2028,6 @@ class Window(QDialog):
                         classifierText.setVisible(False)
                         self.pcplot.addItem(classifierText)
                         self.classifierStr.append(classifierText)
-                    # If we only support 1 patient, hide the other patient window
-                    if self.profile["maxTracks"] == 1:
-                        self.vitals[1]["pane"].setVisible(False)
-                    # Initialize Vitals output dictionaries for each potential patient
-                    for i in range(min(self.profile["maxTracks"], MAX_VITALS_PATIENTS)):
-                        # Initialize
-                        patientDict = {}
-                        patientDict["id"] = i
-                        patientDict["rangeBin"] = 0
-                        patientDict["breathDeviation"] = 0
-                        patientDict["heartRate"] = []
-                        patientDict["breathRate"] = 0
-                        patientDict["heartWaveform"] = []
-                        patientDict["breathWaveform"] = []
-                        self.vitalsPatientData.append(patientDict)
-
-                        # Make each patient's pane visible
-                        self.vitals[i]["pane"].setVisible(True)
 
                 elif args[0] == "AllocationParam":
                     pass
@@ -3331,18 +2228,6 @@ class Window(QDialog):
             self.rangePlot.getPlotItem().setLabel(
                 "top", "INVALID gui monitor range profile input"
             )
-
-        # self.profile['maxRange'] = self.profile['sampleRate']*1e3*0.9*3e8/(2*self.profile['slope']*1e12)
-        # bw = self.profile['samples']/(self.profile['sampleRate']*1e3)*self.profile['slope']*1e12
-        # rangeRes = 3e8/(2*bw)
-        # Tc = (self.profile['idle']*1e-6 + self.profile['rampEnd']*1e-6)*chirpCount
-        # lda = 3e8/(self.profile['startFreq']*1e9)
-        # maxVelocity = lda/(4*Tc)
-        # velocityRes = lda/(2*Tc*self.profile['numLoops']*self.profile['numTx'])
-        # self.configTable.setItem(1,1,QTableWidgetItem(str(self.profile['maxRange'])[:5]))
-        # self.configTable.setItem(2,1,QTableWidgetItem(str(rangeRes)[:5]))
-        # self.configTable.setItem(3,1,QTableWidgetItem(str(maxVelocity)[:5]))
-        # self.configTable.setItem(4,1,QTableWidgetItem(str(velocityRes)[:5]))
 
         # Update sensor position
         self.az_tilt.setText(str(self.profile["az_tilt"]))
